@@ -37,4 +37,10 @@ class CountMinSketch(CountMinSketchBase):
         return min(table[i] for table, i in zip(self.hash_tables, self._hash(item)))
 
     def reset(self):
-        pass
+        """
+        Reset the sketch by clearing all tables and setting the count to 0.
+        """
+        self.totalCount = 0  # Reset the count of items
+        for table in self.hash_tables:
+            for i in range(len(table)):
+                table[i] = 0
