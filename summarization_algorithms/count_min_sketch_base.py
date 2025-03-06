@@ -4,7 +4,7 @@ Count-Min Sketch Base Class
 This file contains the abstract base class for Count-Min Sketch (CMS) implementations.
 
 Subclasses must implement the `add`, `query`, and `reset` methods.
-Subclasses may implement the`__init__` method if needed.
+Subclasses may implement the`__init__` method if additional parameters are needed.
 """
 import abc
 
@@ -14,14 +14,13 @@ class CountMinSketchBase(abc.ABC):
     Abstract base class for Count-Min Sketch implementations.
     Defines the core structure and methods of Count-Min Sketches.
     """
-    def __init__(self, width, depth, seed=42, *args, **kwargs):
+    def __init__(self, width, depth, *args, **kwargs):
         """
         Initialize sketch with width, depth, and seed.
         Subclasses may require additional parameters.
         """
         self.width = width
         self.depth = depth
-        self.seed = seed
         self.n = 0
 
         pass  # Allow subclasses to handle additional parameters as necessary
