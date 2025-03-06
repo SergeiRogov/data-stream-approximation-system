@@ -3,7 +3,8 @@ Count-Min Sketch Base Class
 
 This file contains the abstract base class for Count-Min Sketch (CMS) implementations.
 
-Subclasses must implement the `__init__`, `add`, `query`, and `reset` methods.
+Subclasses must implement the `add`, `query`, and `reset` methods.
+Subclasses may implement the`__init__` method if needed.
 """
 import abc
 
