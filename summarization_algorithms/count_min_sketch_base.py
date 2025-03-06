@@ -21,7 +21,7 @@ class CountMinSketchBase(abc.ABC):
         """
         self.width = width
         self.depth = depth
-        self.n = 0
+        self.totalCount = 0
 
         pass  # Allow subclasses to handle additional parameters as necessary
 
@@ -59,4 +59,4 @@ class CountMinSketchBase(abc.ABC):
         """
         Return number of distinct items counted.
         """
-        return self.n
+        return self.totalCount
