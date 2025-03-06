@@ -30,7 +30,11 @@ class CountMinSketch(CountMinSketchBase):
             table[i] += count
 
     def query(self, item):
-        pass
+        """
+        Return an estimation of the amount of times `item` has ocurred.
+        The returned value always overestimates the real value.
+        """
+        return min(table[i] for table, i in zip(self.hash_tables, self._hash(item)))
 
     def reset(self):
         pass
