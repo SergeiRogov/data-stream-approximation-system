@@ -1,5 +1,6 @@
 """
-Count-Min Sketch Base Class
+count_min_sketch_base.py
+Count-Min Sketch Base Class.
 
 This file contains the abstract base class for Count-Min Sketch (CMS) implementations.
 
