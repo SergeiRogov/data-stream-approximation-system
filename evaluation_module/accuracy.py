@@ -12,7 +12,7 @@ Usage:
 import random
 
 
-def evaluate_accuracy(cms, ground_truth, test_samples=100):
+def evaluate_accuracy(cms, ground_truth, test_samples=1000):
     """
     Evaluates the accuracy of a given Count-Min Sketch instance.
 
