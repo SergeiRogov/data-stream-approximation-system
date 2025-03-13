@@ -2,7 +2,7 @@
 count_min_sketch.py
 Regular Count-Min Sketch implementation.
 """
-from count_min_sketch_base import CountMinSketchBase
+from summarization_algorithms.count_min_sketch_base import CountMinSketchBase
 import array
 import hashlib
 
