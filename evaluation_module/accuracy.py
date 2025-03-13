@@ -12,7 +12,7 @@ Usage:
 import random
 
 
-def evaluate_accuracy(cms, ground_truth, test_samples=1000):
+def evaluate_accuracy(cms, ground_truth, test_samples_num=1000):
     """
     Evaluates the accuracy of a given Count-Min Sketch instance.
 
@@ -22,7 +22,7 @@ def evaluate_accuracy(cms, ground_truth, test_samples=1000):
     Args:
         cms: A CountMinSketch instance.
         ground_truth: A dictionary with ground truth counts.
-        test_samples: Number of items to sample for accuracy testing.
+        test_samples_num: Number of items to sample for accuracy testing.
 
     Returns:
         A dictionary containing the following:
@@ -32,7 +32,7 @@ def evaluate_accuracy(cms, ground_truth, test_samples=1000):
             - 'max_error_percentage': Maximum error percentage
             - 'exact_match_percentage': Exact match percentage
     """
-    test_items = random.sample(list(ground_truth.keys()), min(test_samples, len(ground_truth)))
+    test_items = random.sample(list(ground_truth.keys()), min(test_samples_num, len(ground_truth)))
     errors = [cms.query(item) - ground_truth[item] for item in test_items]
     correct_count = sum(1 for err in errors if err == 0)
 
