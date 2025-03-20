@@ -11,7 +11,7 @@ class DatasetStreamSimulator:
         Initialize the stream simulator.
 
         Args:
-            dataset_path: Path to the dataset file (CSV).
+            dataset_path: Path to the dataset CSV file.
             field_name: The field to extract from the CSV file.
             sleep_time: Time delay between yielding each item.
         """
