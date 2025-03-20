@@ -20,7 +20,7 @@ class CountMinSketch(CountMinSketchBase):
 
     def _hash(self, x):
         """
-        Generate multiple hash values for a given input item `x`
+        Generate multiple hash values for a given input item
         """
         base_hash = hashlib.md5(str(hash(x)).encode('utf-8'))
         for i in range(self.depth):
