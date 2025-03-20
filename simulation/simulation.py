@@ -1,6 +1,6 @@
 from evaluation_module.memory_usage import evaluate_memory_usage
 from evaluation_module.query_speed import evaluate_query_speed
-from input_stream_module.stream_simulator import StreamSimulator
+from input_stream_module.random_stream_simulator import RandomStreamSimulator
 from summarization_algorithms.count_min_sketch import CountMinSketch
 from evaluation_module.accuracy import evaluate_accuracy
 import copy
@@ -25,13 +25,13 @@ if __name__ == '__main__':
     DEPTH = 5
     SLEEP_TIME = 0.001
 
-    stream_simulator = StreamSimulator(stream_size=STREAM_SIZE, sleep_time=SLEEP_TIME)
+    stream_simulator = RandomStreamSimulator(stream_size=STREAM_SIZE, sleep_time=SLEEP_TIME)
     cms = CountMinSketch(width=WIDTH, depth=DEPTH)
 
     ground_truth = {}
     MIDWAY_THRESHOLD = STREAM_SIZE // 2
 
-    for item in stream_simulator.simulate_stream():
+    for item in stream_simulator.simulate_random_stream():
         cms.add(item)
         ground_truth[item] = ground_truth.get(item, 0) + 1
 
