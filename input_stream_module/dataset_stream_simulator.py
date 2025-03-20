@@ -12,7 +12,7 @@ class DatasetStreamSimulator:
 
         Args:
             dataset_path: Path to the dataset file (CSV).
-            field_name: The field to extract from the CSV file (like "Tweet").
+            field_name: The field to extract from the CSV file.
             sleep_time: Time delay between yielding each item.
         """
         self.dataset_path = dataset_path
