@@ -3,7 +3,7 @@ count_min_sketch.py
 Regular Count-Min Sketch implementation.
 """
 from summarization_algorithms.count_min_sketch_base import CountMinSketchBase
-import array
+import numpy as np
 import hashlib
 
 
@@ -11,13 +11,12 @@ class CountMinSketch(CountMinSketchBase):
     """
     Regular Count-Min Sketch implementation.
     """
-
     def __init__(self, width, depth):
         """
         Initialize sketch with width, depth, and seed.
         """
         super().__init__(width, depth)
-        self.hash_tables = [array.array("l", (0 for _ in range(self.width))) for _ in range(self.depth)]
+        self.hash_tables = np.zeros((self.depth, self.width), dtype=int)
 
     def _hash(self, x):
         """
