@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from evaluation_module.accuracy import evaluate_accuracy
+from evaluation.accuracy import evaluate_accuracy
 
 
 class TestAccuracyEvaluation(unittest.TestCase):

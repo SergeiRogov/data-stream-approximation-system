@@ -1,9 +1,9 @@
-from evaluation_module.memory_usage import evaluate_memory_usage
-from evaluation_module.query_speed import evaluate_query_speed
-from input_stream_module.dataset_stream_simulator import DatasetStreamSimulator
-from input_stream_module.random_stream_simulator import RandomStreamSimulator
+from evaluation.memory_usage import evaluate_memory_usage
+from evaluation.query_speed import evaluate_query_speed
+from input_stream.dataset_stream_simulator import DatasetStreamSimulator
+from input_stream.random_stream_simulator import RandomStreamSimulator
 from summarization_algorithms.count_min_sketch import CountMinSketch
-from evaluation_module.accuracy import evaluate_accuracy
+from evaluation.accuracy import evaluate_accuracy
 import copy
 
 
