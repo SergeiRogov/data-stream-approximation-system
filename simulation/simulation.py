@@ -22,13 +22,16 @@ if __name__ == '__main__':
     DEPTH = 5
     SLEEP_TIME = 0.001
 
-    # stream_simulator = RandomStreamSimulator(stream_size=STREAM_SIZE, sleep_time=SLEEP_TIME)
-    stream_simulator = DatasetStreamSimulator(dataset_path="../datasets/FIFA.csv", field_name="Tweet", sleep_time=SLEEP_TIME)
+    DATASET_PATH = "../datasets/FIFA.csv"
+    FIELD = "Tweet"
+
+    # stream_simulator = RandomStreamSimulator(stream_size=1000, sleep_time=SLEEP_TIME)
+    stream_simulator = DatasetStreamSimulator(dataset_path=DATASET_PATH, field_name=FIELD, sleep_time=SLEEP_TIME)
     cms = CountMinSketch(width=WIDTH, depth=DEPTH)
 
     ground_truth = {}
     eval_every_n_items = 5000
-    for item in stream_simulator.simulate_dataset_stream():
+    for item in stream_simulator.simulate_stream():
         cms.add(item)
         ground_truth[item] = ground_truth.get(item, 0) + 1
 

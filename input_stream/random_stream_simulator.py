@@ -1,28 +1,19 @@
 import random
 import time
+from input_stream.stream_simulator_base import StreamSimulator
 
 
-class RandomStreamSimulator:
+class RandomStreamSimulator(StreamSimulator):
     """
-    A class to simulate a simple data stream by generating items at a controlled rate.
-
-    This class mimics real-time streaming data by yielding randomly selected items
-    from a predefined list with a specified time delay between each item.
+    Simulates a simple data stream by generating items at a controlled rate.
     """
+
     def __init__(self, sleep_time=0.01, stream_size=1000, item_list=None):
-        """
-        Initialize the StreamSimulator.
-
-        Args:
-            sleep_time: Time delay between each item being added to simulate the stream.
-            stream_size: The number of items in the simulated stream.
-            item_list: A list of items that can be randomly chosen in the stream.
-        """
+        super().__init__(sleep_time)
         self.stream_size = stream_size
         self.item_list = item_list if item_list else ["apple", "banana", "cherry",
                                                       "ginger", "strawberry", "fig",
                                                       "grape", "pineapple", "kiwi"]
-        self.sleep_time = sleep_time
 
     def generate_random_stream(self):
         """
@@ -32,7 +23,7 @@ class RandomStreamSimulator:
         """
         return [random.choice(self.item_list) for _ in range(self.stream_size)]
 
-    def simulate_random_stream(self):
+    def simulate_stream(self):
         """
         Simulate a real-time data stream by yielding one item at a time.
         Yields:

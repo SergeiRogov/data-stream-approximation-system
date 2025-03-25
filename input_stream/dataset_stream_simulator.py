@@ -1,25 +1,18 @@
 import csv
 import time
+from input_stream.stream_simulator_base import StreamSimulator
 
 
-class DatasetStreamSimulator:
+class DatasetStreamSimulator(StreamSimulator):
     """
-    A class to simulate a real-time data stream from a CSV dataset.
+    Simulates a real-time data stream from a CSV dataset.
     """
     def __init__(self, dataset_path, field_name, sleep_time=0.01):
-        """
-        Initialize the stream simulator.
-
-        Args:
-            dataset_path: Path to the dataset CSV file.
-            field_name: The field to extract from the CSV file.
-            sleep_time: Time delay between yielding each item.
-        """
+        super().__init__(sleep_time)
         self.dataset_path = dataset_path
         self.field_name = field_name
-        self.sleep_time = sleep_time
 
-    def simulate_dataset_stream(self):
+    def simulate_stream(self):
         """
         Simulate a real-time data stream by yielding one item at a time from the specified field.
         """
