@@ -66,9 +66,9 @@ def evaluate_accuracy(cms, ground_truth):
     if overestimations:
         overestimation_errors = [error for _, error in sorted_overestimations]
         percentiles = {
-            "50th_percentile": np.percentile(overestimation_errors, 50),
-            "90th_percentile": np.percentile(overestimation_errors, 90),
-            "95th_percentile": np.percentile(overestimation_errors, 95),
+            "50th": np.percentile(overestimation_errors, 50),
+            "90th": np.percentile(overestimation_errors, 90),
+            "95th": np.percentile(overestimation_errors, 95),
         }
 
     print(f"Overestimations: {len(overestimations)} ({overestimation_percentage:.2f}%)")
@@ -88,11 +88,12 @@ def evaluate_accuracy(cms, ground_truth):
         print(f"{item}: {error}")
 
     return {
+        'overestimation_percentage': overestimation_percentage,
+        'exact_match_percentage': exact_match_percentage,
         'avg_error': avg_error,
         'avg_error_percentage': avg_error_percentage,
         'max_error': max_error,
         'max_error_percentage': max_error_percentage,
-        'exact_match_percentage': exact_match_percentage,
         'percentiles': percentiles,
         'overestimated_items': sorted_overestimations
     }
