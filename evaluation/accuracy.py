@@ -10,9 +10,10 @@ Usage:
       to maintain consistency.
 """
 import random
+import numpy as np
 
 
-def evaluate_accuracy(cms, ground_truth, test_samples_num=1000):
+def evaluate_accuracy(cms, ground_truth):
     """
     Evaluates the accuracy of a given Count-Min Sketch instance.
 
@@ -22,7 +23,6 @@ def evaluate_accuracy(cms, ground_truth, test_samples_num=1000):
     Args:
         cms: A CountMinSketch instance.
         ground_truth: A dictionary with ground truth counts.
-        test_samples_num: Number of items to sample for accuracy testing.
 
     Returns:
         A dictionary containing the following:
@@ -32,15 +32,24 @@ def evaluate_accuracy(cms, ground_truth, test_samples_num=1000):
             - 'max_error_percentage': Maximum error percentage
             - 'exact_match_percentage': Exact match percentage
     """
-    test_items = list(ground_truth.keys()) if test_samples_num is None else random.sample(list(ground_truth.keys()), min(test_samples_num, len(ground_truth)))
+    test_items = list(ground_truth.keys())
     dataset_length = len(test_items)
 
     if not dataset_length:
         return "\nNo items processed"
 
-    errors = [cms.query(item) - ground_truth[item] for item in test_items]
-    correct_count = sum(1 for err in errors if err == 0)
-    overestimation_count = dataset_length - correct_count
+    errors = []
+    overestimations = []
+    correct_count = 0
+
+    for item in test_items:
+        error = cms.query(item) - ground_truth[item]
+        errors.append(error)
+
+        if error == 0:
+            correct_count += 1
+        elif error > 0:
+            overestimations.append((item, error))
 
     avg_error = sum(errors) / dataset_length
     max_error = max(errors)
@@ -50,19 +59,40 @@ def evaluate_accuracy(cms, ground_truth, test_samples_num=1000):
     max_error_percentage = max(err / ground_truth[item] * 100 for item, err in zip(test_items, errors))
 
     exact_match_percentage = (correct_count / dataset_length) * 100
-    overestimation_percentage = (overestimation_count / dataset_length) * 100
+    overestimation_percentage = (len(overestimations) / dataset_length) * 100
 
-    print(f"Overestimations: {overestimation_count} ({overestimation_percentage:.2f}%)")
+    sorted_overestimations = sorted(overestimations, key=lambda x: x[1], reverse=True)
+    percentiles = {}
+    if overestimations:
+        overestimation_errors = [error for _, error in sorted_overestimations]
+        percentiles = {
+            "50th_percentile": np.percentile(overestimation_errors, 50),
+            "90th_percentile": np.percentile(overestimation_errors, 90),
+            "95th_percentile": np.percentile(overestimation_errors, 95),
+        }
+
+    print(f"Overestimations: {len(overestimations)} ({overestimation_percentage:.2f}%)")
     print(f"Exact Matches: {correct_count} ({exact_match_percentage:.2f}%)")
     print(f"Average Error Percentage: {avg_error_percentage:.2f}%")
     print(f"Average Error: {avg_error:.3f}")
     print(f"Max Error: {max_error}")
     print(f"Max Error Percentage: {max_error_percentage:.2f}%")
 
+    print("Percentiles:")
+    max_items_to_display = 10
+    for percentile, value in percentiles.items():
+        print(f"{percentile}: {value}")
+
+    print("\nSorted Overestimated Items:")
+    for item, error in sorted_overestimations[:max_items_to_display]:
+        print(f"{item}: {error}")
+
     return {
         'avg_error': avg_error,
         'avg_error_percentage': avg_error_percentage,
         'max_error': max_error,
         'max_error_percentage': max_error_percentage,
-        'exact_match_percentage': exact_match_percentage
+        'exact_match_percentage': exact_match_percentage,
+        'percentiles': percentiles,
+        'overestimated_items': sorted_overestimations
     }
