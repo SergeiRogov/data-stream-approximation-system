@@ -21,11 +21,10 @@ def evaluate(cms, ground_truth):
     return accuracy, query_speed, memory_usage
 
 
-def record_metrics(items_processed, accuracy, query_speed, memory_usage):
+def record_metrics(results_file, items_processed, accuracy, query_speed, memory_usage):
     result = {
         "processed_items": int(items_processed),
         "avg_error": float(accuracy["avg_error"]),
-        "max_error": float(accuracy["max_error"]),
         "overestimation_percentage": float(accuracy["overestimation_percentage"]),
         "query_speed": float(query_speed),
         "memory_usage": float(memory_usage),
@@ -33,12 +32,13 @@ def record_metrics(items_processed, accuracy, query_speed, memory_usage):
             "50th": float(accuracy["percentiles"].get("50th", 0.0)),
             "90th": float(accuracy["percentiles"].get("90th", 0.0)),
             "95th": float(accuracy["percentiles"].get("95th", 0.0)),
+            "100th": float(accuracy["percentiles"].get("100th", 0.0)),
         }
     }
-    with open(RESULTS_FILE, "r") as f:
+    with open(results_file, "r") as f:
         existing_results = json.load(f)
     existing_results.append(result)
-    with open(RESULTS_FILE, "w") as f:
+    with open(results_file, "w") as f:
         json.dump(existing_results, f, indent=4)
 
 
@@ -74,12 +74,12 @@ if __name__ == '__main__':
 
         if cms.totalCount % eval_every_n_items == 0:
             accuracy, query_speed, memory_usage = evaluate(copy.deepcopy(cms), copy.deepcopy(ground_truth))
-            record_metrics(cms.totalCount, accuracy, query_speed, memory_usage)
+            record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage)
 
         if cms.totalCount % visualize_every_n_items == 0:
             visualize(RESULTS_FILE, OUTPUT_DIR)
 
     accuracy, query_speed, memory_usage = evaluate(cms, ground_truth)
-    record_metrics(cms.totalCount, accuracy, query_speed, memory_usage)
+    record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage)
 
     visualize(RESULTS_FILE, OUTPUT_DIR)

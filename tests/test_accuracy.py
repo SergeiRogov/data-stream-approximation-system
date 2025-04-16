@@ -30,7 +30,6 @@ class TestAccuracyEvaluation(unittest.TestCase):
 
         self.assertEqual(result['avg_error'], 0)  # No error
         self.assertEqual(result['avg_error_percentage'], 0)  # No error
-        self.assertEqual(result['max_error'], 0)  # No error
         self.assertEqual(result['max_error_percentage'], 0)  # No error
         self.assertEqual(result['exact_match_percentage'], 100)  # All exact matches
 
@@ -55,7 +54,7 @@ class TestAccuracyEvaluation(unittest.TestCase):
 
         self.assertEqual(result['avg_error'], 0.75)  # Average error = (0+2+0+1)/4 = 0.75
         self.assertEqual(result['avg_error_percentage'], 3.125)  # (0 + 10 + 0 + 2.5) / 4
-        self.assertEqual(result['max_error'], 2)  # Max error is 2 (banana)
+        # Max error is 2 (banana)
         self.assertEqual(result['max_error_percentage'], 10)  # (2 / 20) * 100 = 10 (banana)
         self.assertEqual(result['exact_match_percentage'], 50)  # There are 2 out of 4 exact matches
 
@@ -80,7 +79,7 @@ class TestAccuracyEvaluation(unittest.TestCase):
 
         self.assertEqual(result['avg_error'], 13.75)  # Average error = (5 + 10 + 20 + 20) / 4 = 13.75
         self.assertAlmostEqual(result['avg_error_percentage'], 54.16667, places=4)  # (50 + 50 + 66.6 + 50) / 4
-        self.assertEqual(result['max_error'], 20)  # Max error is 20 (cherry or ginger)
+        # Max error is 20 (cherry or ginger)
         self.assertAlmostEqual(result['max_error_percentage'], 2/3*100, places=4)  # (cherry 66.6% error)
         self.assertEqual(result['exact_match_percentage'], 0)  # No exact matches
 
