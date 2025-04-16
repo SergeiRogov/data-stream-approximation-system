@@ -18,5 +18,6 @@ class StreamSimulator(abc.ABC):
     def simulate_stream(self):
         """
         Abstract method to simulate a real-time data stream.
+        Should yield one item at a time.
         """
         pass

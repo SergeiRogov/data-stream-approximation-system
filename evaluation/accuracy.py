@@ -28,9 +28,10 @@ def evaluate_accuracy(cms, ground_truth):
         A dictionary containing the following:
             - 'avg_error': Average error
             - 'avg_error_percentage': Average error percentage
-            - 'max_error': Maximum error
-            - 'max_error_percentage': Maximum error percentage
             - 'exact_match_percentage': Exact match percentage
+            - 'overestimation_percentage': Overestimation percentage
+            - 'percentiles': Dict with error percentiles (50th, 90th, 95th, 100th)
+            - 'overestimated_items': List of (item, error), sorted by error desc
     """
     test_items = list(ground_truth.keys())
     dataset_length = len(test_items)
@@ -52,9 +53,7 @@ def evaluate_accuracy(cms, ground_truth):
             overestimations.append((item, error))
 
     avg_error = sum(errors) / dataset_length
-    max_error = max(errors)
 
-    # maximum error and maximum error percentage could be associated with different items
     avg_error_percentage = sum(err / ground_truth[item] * 100 for item, err in zip(test_items, errors)) / dataset_length
     max_error_percentage = max(err / ground_truth[item] * 100 for item, err in zip(test_items, errors))
 
@@ -69,20 +68,20 @@ def evaluate_accuracy(cms, ground_truth):
             "50th": np.percentile(overestimation_errors, 50),
             "90th": np.percentile(overestimation_errors, 90),
             "95th": np.percentile(overestimation_errors, 95),
+            "100th": np.percentile(overestimation_errors, 100)
         }
 
     print(f"Overestimations: {len(overestimations)} ({overestimation_percentage:.2f}%)")
     print(f"Exact Matches: {correct_count} ({exact_match_percentage:.2f}%)")
     print(f"Average Error Percentage: {avg_error_percentage:.2f}%")
     print(f"Average Error: {avg_error:.3f}")
-    print(f"Max Error: {max_error}")
     print(f"Max Error Percentage: {max_error_percentage:.2f}%")
 
     print("Percentiles:")
-    max_items_to_display = 10
     for percentile, value in percentiles.items():
         print(f"{percentile}: {value}")
 
+    max_items_to_display = 10
     print("\nSorted Overestimated Items:")
     for item, error in sorted_overestimations[:max_items_to_display]:
         print(f"{item}: {error}")
@@ -92,7 +91,6 @@ def evaluate_accuracy(cms, ground_truth):
         'exact_match_percentage': exact_match_percentage,
         'avg_error': avg_error,
         'avg_error_percentage': avg_error_percentage,
-        'max_error': max_error,
         'max_error_percentage': max_error_percentage,
         'percentiles': percentiles,
         'overestimated_items': sorted_overestimations
