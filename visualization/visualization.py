@@ -29,11 +29,13 @@ def plot_percentiles(results, save_path):
     p50 = [entry["percentiles"]["50th"] for entry in results]
     p90 = [entry["percentiles"]["90th"] for entry in results]
     p95 = [entry["percentiles"]["95th"] for entry in results]
+    p100 = [entry["percentiles"]["100th"] for entry in results]
 
     plt.figure(figsize=(8, 5))
     plt.plot(processed_items, p50, marker="o", linestyle="--", label="50th Percentile")
     plt.plot(processed_items, p90, marker="s", linestyle="-", label="90th Percentile")
     plt.plot(processed_items, p95, marker="^", linestyle="-.", label="95th Percentile")
+    plt.plot(processed_items, p100, marker="*", linestyle=":", label="100th Percentile")
 
     plt.xlabel("Number of Processed Items")
     plt.ylabel("Error Value")
@@ -50,7 +52,6 @@ def visualize(results_file, output_dir):
     results = load_results(results_file)
 
     plot_metric(results, "avg_error", "Average Error", "Avg Error vs. Processed Items", f"{output_dir}/avg_error.png")
-    plot_metric(results, "max_error", "Max Error", "Max Error vs. Processed Items", f"{output_dir}/max_error.png")
     plot_metric(results, "overestimation_percentage", "Overestimation Percentage (%)", "Overestimation Percentage vs. Processed Items",
                 f"{output_dir}/overestimation_percentage.png")
     plot_metric(results, "query_speed", "Query Speed (seconds per item)", "Query Speed vs. Processed Items",
