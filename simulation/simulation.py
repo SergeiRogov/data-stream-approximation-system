@@ -1,9 +1,9 @@
 import json
 import os
+import datetime
 from evaluation.memory_usage import evaluate_memory_usage
 from evaluation.query_speed import evaluate_query_speed
 from input_stream.dataset_stream_simulator import DatasetStreamSimulator
-from input_stream.random_stream_simulator import RandomStreamSimulator
 from summarization_algorithms.count_min_sketch import CountMinSketch
 from evaluation.accuracy import evaluate_accuracy
 import copy
@@ -35,8 +35,11 @@ def record_metrics(results_file, items_processed, accuracy, query_speed, memory_
             "100th": float(accuracy["percentiles"].get("100th", 0.0)),
         }
     }
-    with open(results_file, "r") as f:
-        existing_results = json.load(f)
+    try:
+        with open(results_file, "r") as f:
+            existing_results = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        existing_results = []
     existing_results.append(result)
     with open(results_file, "w") as f:
         json.dump(existing_results, f, indent=4)
@@ -46,27 +49,31 @@ if __name__ == '__main__':
 
     WIDTH = 10000
     DEPTH = 5
-    SLEEP_TIME = 0.001
+    SLEEP_TIME = 0.00001
 
     DATASET_PATH = "../datasets/FIFA.csv"
     FIELD = "Tweet"
 
-    # stream_simulator = RandomStreamSimulator(stream_size=1000, sleep_time=SLEEP_TIME)
     stream_simulator = DatasetStreamSimulator(dataset_path=DATASET_PATH, field_name=FIELD, sleep_time=SLEEP_TIME)
     cms = CountMinSketch(width=WIDTH, depth=DEPTH)
 
-    RESULTS_FILE = f"../experiments/results_{cms.width}_{cms.depth}.json"
-    OUTPUT_DIR = "../visualization/plots"
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    ALGORITHM_NAME = cms.__class__.__name__
+    DATASET_NAME = os.path.splitext(os.path.basename(DATASET_PATH))[0]
+    RESULTS_DIR = f"../experiments/{DATASET_NAME}/{ALGORITHM_NAME}"
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    RESULTS_FILE = f"{RESULTS_DIR}/w{cms.width}_d{cms.depth}_{timestamp}.json"
+    PLOTS_DIR = f"../visualization/plots/{DATASET_NAME}/{ALGORITHM_NAME}"
+    os.makedirs(PLOTS_DIR, exist_ok=True)
 
     if not os.path.exists(RESULTS_FILE):
         with open(RESULTS_FILE, "w") as f:
             json.dump([], f)
 
     ground_truth = {}
-    results = []
 
-    eval_every_n_items = 5000
-    visualize_every_n_items = 50_000
+    eval_every_n_items = 5_000
+    visualize_every_n_items = 100_000
 
     for item in stream_simulator.simulate_stream():
         cms.add(item)
@@ -77,9 +84,8 @@ if __name__ == '__main__':
             record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage)
 
         if cms.totalCount % visualize_every_n_items == 0:
-            visualize(RESULTS_FILE, OUTPUT_DIR)
+            visualize(RESULTS_FILE, PLOTS_DIR)
 
     accuracy, query_speed, memory_usage = evaluate(cms, ground_truth)
     record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage)
-
-    visualize(RESULTS_FILE, OUTPUT_DIR)
+    visualize(RESULTS_FILE, PLOTS_DIR)
