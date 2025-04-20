@@ -50,3 +50,9 @@ class CountMinSketch(CountMinSketchBase):
         for table in self.hash_tables:
             for i in range(len(table)):
                 table[i] = 0
+
+    def get_load_factor(self):
+        """
+        Return the load factor: maximum number of non-zero counters in any row, divided by width.
+        """
+        return max(sum(1 for cell in row if cell > 0) for row in self.hash_tables) / self.width
