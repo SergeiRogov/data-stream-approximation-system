@@ -17,17 +17,19 @@ def evaluate(cms, ground_truth):
     accuracy = evaluate_accuracy(cms, ground_truth)
     query_speed = evaluate_query_speed(cms, ground_truth)
     memory_usage = evaluate_memory_usage(cms)
+    load_factor = cms.get_load_factor()
 
-    return accuracy, query_speed, memory_usage
+    return accuracy, query_speed, memory_usage, load_factor
 
 
-def record_metrics(results_file, items_processed, accuracy, query_speed, memory_usage):
+def record_metrics(results_file, items_processed, accuracy, query_speed, memory_usage, load_factor):
     result = {
         "processed_items": int(items_processed),
         "avg_error": float(accuracy["avg_error"]),
         "overestimation_percentage": float(accuracy["overestimation_percentage"]),
         "query_speed": float(query_speed),
         "memory_usage": float(memory_usage),
+        "load_factor": float(load_factor),
         "percentiles": {
             "50th": float(accuracy["percentiles"].get("50th", 0.0)),
             "90th": float(accuracy["percentiles"].get("90th", 0.0)),
@@ -73,19 +75,19 @@ if __name__ == '__main__':
     ground_truth = {}
 
     eval_every_n_items = 5_000
-    visualize_every_n_items = 100_000
+    visualize_every_n_items = 200_000
 
     for item in stream_simulator.simulate_stream():
         cms.add(item)
         ground_truth[item] = ground_truth.get(item, 0) + 1
 
         if cms.totalCount % eval_every_n_items == 0:
-            accuracy, query_speed, memory_usage = evaluate(copy.deepcopy(cms), copy.deepcopy(ground_truth))
-            record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage)
+            accuracy, query_speed, memory_usage, load_factor = evaluate(copy.deepcopy(cms), copy.deepcopy(ground_truth))
+            record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage, load_factor)
 
         if cms.totalCount % visualize_every_n_items == 0:
             visualize(RESULTS_FILE, PLOTS_DIR)
 
-    accuracy, query_speed, memory_usage = evaluate(cms, ground_truth)
-    record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage)
+    accuracy, query_speed, memory_usage, load_factor = evaluate(cms, ground_truth)
+    record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage, load_factor)
     visualize(RESULTS_FILE, PLOTS_DIR)
