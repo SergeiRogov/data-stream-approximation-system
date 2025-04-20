@@ -13,7 +13,7 @@ def plot_metric(results, metric, ylabel, title, save_path):
     values = [entry[metric] for entry in results]
 
     plt.figure(figsize=(8, 5))
-    plt.plot(processed_items, values, marker="o", linestyle="-", label=metric)
+    plt.plot(processed_items, values, marker="o", linestyle="-", markersize=3, label=metric)
     plt.xlabel("Number of Processed Items")
     plt.ylabel(ylabel)
     plt.title(title)
@@ -32,10 +32,10 @@ def plot_percentiles(results, save_path):
     p100 = [entry["percentiles"]["100th"] for entry in results]
 
     plt.figure(figsize=(8, 5))
-    plt.plot(processed_items, p50, marker="o", linestyle="--", label="50th Percentile")
-    plt.plot(processed_items, p90, marker="s", linestyle="-", label="90th Percentile")
-    plt.plot(processed_items, p95, marker="^", linestyle="-.", label="95th Percentile")
-    plt.plot(processed_items, p100, marker="*", linestyle=":", label="100th Percentile")
+    plt.plot(processed_items, p50, marker="o", linestyle="--", markersize=3, label="50th Percentile")
+    plt.plot(processed_items, p90, marker="s", linestyle="-", markersize=3, label="90th Percentile")
+    plt.plot(processed_items, p95, marker="^", linestyle="-.", markersize=3, label="95th Percentile")
+    plt.plot(processed_items, p100, marker="*", linestyle=":", markersize=3, label="100th Percentile")
 
     plt.xlabel("Number of Processed Items")
     plt.ylabel("Error Value")
@@ -54,6 +54,8 @@ def visualize(results_file, output_dir):
     plot_metric(results, "avg_error", "Average Error", "Avg Error vs. Processed Items", f"{output_dir}/avg_error.png")
     plot_metric(results, "overestimation_percentage", "Overestimation Percentage (%)", "Overestimation Percentage vs. Processed Items",
                 f"{output_dir}/overestimation_percentage.png")
+    plot_metric(results, "load_factor", "Load Factor", "Factor vs. Processed Items",
+                f"{output_dir}/load_factor.png")
     plot_metric(results, "query_speed", "Query Speed (seconds per item)", "Query Speed vs. Processed Items",
                 f"{output_dir}/query_speed.png")
     plot_metric(results, "memory_usage", "Memory Usage (bytes)", "Memory Usage vs. Processed Items",
