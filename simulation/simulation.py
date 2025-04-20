@@ -11,9 +11,7 @@ from visualization.visualization import visualize
 
 
 def evaluate(cms, ground_truth):
-    print("\n------------------------------------------------------------")
-    print(f"Evaluating accuracy after ({cms.totalCount} items processed)")
-    print("------------------------------------------------------------")
+    print(f"{cms.totalCount} items processed. Evaluating...")
     accuracy = evaluate_accuracy(cms, ground_truth)
     query_speed = evaluate_query_speed(cms, ground_truth)
     memory_usage = evaluate_memory_usage(cms)
@@ -62,11 +60,12 @@ if __name__ == '__main__':
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     ALGORITHM_NAME = cms.__class__.__name__
     DATASET_NAME = os.path.splitext(os.path.basename(DATASET_PATH))[0]
-    RESULTS_DIR = f"../experiments/{DATASET_NAME}/{ALGORITHM_NAME}"
+
+    RESULTS_DIR = f"../experiments/{DATASET_NAME}/{ALGORITHM_NAME}/w{cms.width}_d{cms.depth}/{timestamp}"
     os.makedirs(RESULTS_DIR, exist_ok=True)
-    RESULTS_FILE = f"{RESULTS_DIR}/w{cms.width}_d{cms.depth}_{timestamp}.json"
-    PLOTS_DIR = f"../visualization/plots/{DATASET_NAME}/{ALGORITHM_NAME}"
-    os.makedirs(PLOTS_DIR, exist_ok=True)
+
+    RESULTS_FILE = os.path.join(RESULTS_DIR, "results.json")
+    PLOTS_DIR = RESULTS_DIR
 
     if not os.path.exists(RESULTS_FILE):
         with open(RESULTS_FILE, "w") as f:
