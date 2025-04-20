@@ -17,5 +17,8 @@ def evaluate_memory_usage(cms):
     for table in cms.hash_tables:
         total_size += sys.getsizeof(table) + table.itemsize * len(table)
 
-    print(f"Total CMS memory usage: {total_size} bytes")
     return total_size
+
+
+def print_memory_usage(total_size):
+    print(f"Total CMS memory usage: {total_size} bytes")

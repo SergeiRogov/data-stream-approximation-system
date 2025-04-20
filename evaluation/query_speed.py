@@ -22,6 +22,9 @@ def evaluate_query_speed(cms, ground_truth, test_samples_num=1000):
     end_time = time.time()
 
     avg_query_time = (end_time - start_time) / test_samples_num
-    print(f"Average query time per item: {avg_query_time:.12f} seconds")
 
     return avg_query_time
+
+
+def print_query_speed(avg_query_time):
+    print(f"Average query time per item: {avg_query_time:.12f} seconds")

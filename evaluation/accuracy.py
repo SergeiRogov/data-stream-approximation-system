@@ -9,7 +9,6 @@ Usage:
     - If evaluating mid-stream, pass copies of both the CMS and ground truth
       to maintain consistency.
 """
-import random
 import numpy as np
 
 
@@ -71,21 +70,6 @@ def evaluate_accuracy(cms, ground_truth):
             "100th": np.percentile(overestimation_errors, 100)
         }
 
-    print(f"Overestimations: {len(overestimations)} ({overestimation_percentage:.2f}%)")
-    print(f"Exact Matches: {correct_count} ({exact_match_percentage:.2f}%)")
-    print(f"Average Error Percentage: {avg_error_percentage:.2f}%")
-    print(f"Average Error: {avg_error:.3f}")
-    print(f"Max Error Percentage: {max_error_percentage:.2f}%")
-
-    print("Percentiles:")
-    for percentile, value in percentiles.items():
-        print(f"{percentile}: {value}")
-
-    max_items_to_display = 10
-    print("\nSorted Overestimated Items:")
-    for item, error in sorted_overestimations[:max_items_to_display]:
-        print(f"{item}: {error}")
-
     return {
         'overestimation_percentage': overestimation_percentage,
         'exact_match_percentage': exact_match_percentage,
@@ -95,3 +79,27 @@ def evaluate_accuracy(cms, ground_truth):
         'percentiles': percentiles,
         'overestimated_items': sorted_overestimations
     }
+
+
+def print_accuracy_evaluation(accuracy):
+    overestimations = accuracy['overestimated_items']
+    overestimation_percentage = accuracy['overestimation_percentage']
+    exact_match_percentage = accuracy['exact_match_percentage']
+    avg_error_percentage = accuracy['avg_error_percentage']
+    avg_error = accuracy['avg_error']
+    percentiles = accuracy['percentiles']
+
+    print(f"Overestimations: {len(overestimations)} ({overestimation_percentage:.2f}%)")
+    print(f"Exact Matches: {len([item for item, error in overestimations if error == 0])} ({exact_match_percentage:.2f}%)")
+    print(f"Average Error Percentage: {avg_error_percentage:.2f}%")
+    print(f"Average Error: {avg_error:.3f}")
+    print(f"Max Error Percentage: {accuracy['max_error_percentage']:.2f}%")
+
+    print("Percentiles:")
+    for percentile, value in percentiles.items():
+        print(f"{percentile}: {value}")
+
+    max_items_to_display = 10
+    print("\nSorted Overestimated Items:")
+    for item, error in overestimations[:max_items_to_display]:
+        print(f"{item}: {error}")
