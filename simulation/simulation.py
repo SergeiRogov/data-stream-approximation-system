@@ -4,6 +4,7 @@ import datetime
 from evaluation.memory_usage import evaluate_memory_usage
 from evaluation.query_speed import evaluate_query_speed
 from input_stream.dataset_stream_simulator import DatasetStreamSimulator
+from summarization_algorithms.count_mean_min_sketch import CountMeanMinSketch
 from summarization_algorithms.count_min_sketch import CountMinSketch
 from evaluation.accuracy import evaluate_accuracy
 import copy
@@ -49,13 +50,14 @@ if __name__ == '__main__':
 
     WIDTH = 10000
     DEPTH = 5
-    SLEEP_TIME = 0.00001
+    SLEEP_TIME = 0.00000001
 
     DATASET_PATH = "../datasets/FIFA.csv"
     FIELD = "Tweet"
 
     stream_simulator = DatasetStreamSimulator(dataset_path=DATASET_PATH, field_name=FIELD, sleep_time=SLEEP_TIME)
-    cms = CountMinSketch(width=WIDTH, depth=DEPTH)
+    cms = CountMeanMinSketch(width=WIDTH, depth=DEPTH)
+    # cms = CountMinSketch(width=WIDTH, depth=DEPTH)
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     ALGORITHM_NAME = cms.__class__.__name__
@@ -74,7 +76,7 @@ if __name__ == '__main__':
     ground_truth = {}
 
     eval_every_n_items = 5_000
-    visualize_every_n_items = 200_000
+    visualize_every_n_items = 100_000
 
     for item in stream_simulator.simulate_stream():
         cms.add(item)
