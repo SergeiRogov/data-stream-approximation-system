@@ -13,7 +13,7 @@ class CountMinSketch(CountMinSketchBase):
     """
     def __init__(self, width, depth):
         """
-        Initialize sketch with width, depth, and seed.
+        Initialize sketch with width and depth.
         """
         super().__init__(width, depth)
         self.hash_tables = np.zeros((self.depth, self.width), dtype=int)
@@ -46,10 +46,8 @@ class CountMinSketch(CountMinSketchBase):
         """
         Reset the sketch by clearing all tables and setting the count to 0.
         """
-        self.totalCount = 0  # Reset the count of items
-        for table in self.hash_tables:
-            for i in range(len(table)):
-                table[i] = 0
+        self.totalCount = 0
+        self.hash_tables.fill(0)
 
     def get_load_factor(self):
         """
