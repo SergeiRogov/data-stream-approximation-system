@@ -47,6 +47,13 @@ class CountMinSketchBase(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def get_load_factor(self):
+        """
+        Return the load factor: maximum number of non-zero counters in any row, divided by width.
+        """
+        pass
+
     def __repr__(self):
         return f"{self.__class__.__name__}(width={self.width}, depth={self.depth})"
 
