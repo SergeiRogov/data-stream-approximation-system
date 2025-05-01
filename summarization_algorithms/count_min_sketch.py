@@ -37,7 +37,7 @@ class CountMinSketch(CountMinSketchBase):
 
     def query(self, item):
         """
-        Return an estimation of the amount of times `item` has ocurred.
+        Return an estimation of the amount of times `item` has occurred.
         The returned value always overestimates the real value.
         """
         return min(table[i] for table, i in zip(self.hash_tables, self._hash(item)))
