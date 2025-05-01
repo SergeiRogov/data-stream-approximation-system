@@ -10,6 +10,7 @@ Usage:
       to maintain consistency.
 """
 import numpy as np
+import heapq
 
 
 def evaluate_accuracy(cms, ground_truth):
@@ -32,6 +33,9 @@ def evaluate_accuracy(cms, ground_truth):
             - 'percentiles': Dict with error percentiles (50th, 90th, 95th, 100th)
             - 'overestimated_items': List of (item, error), sorted by error desc
     """
+    if not cms or not ground_truth:
+        return "\nNo data to evaluate"
+
     test_items = list(ground_truth.keys())
     dataset_length = len(test_items)
 
@@ -40,6 +44,7 @@ def evaluate_accuracy(cms, ground_truth):
 
     errors = []
     overestimations = []
+    underestimations = []
     correct_count = 0
 
     for item in test_items:
@@ -50,56 +55,109 @@ def evaluate_accuracy(cms, ground_truth):
             correct_count += 1
         elif error > 0:
             overestimations.append((item, error))
+        else:
+            underestimations.append((item, error))
 
-    avg_error = sum(errors) / dataset_length
+    avg_error = sum(abs(error) for error in errors) / dataset_length
 
-    avg_error_percentage = sum(err / ground_truth[item] * 100 for item, err in zip(test_items, errors)) / dataset_length
-    max_error_percentage = max(err / ground_truth[item] * 100 for item, err in zip(test_items, errors))
+    avg_error_percentage = sum(abs(err) / ground_truth[item] * 100 for item, err in zip(test_items, errors)) / dataset_length
+    max_error_percentage = max(abs(err) / ground_truth[item] * 100 for item, err in zip(test_items, errors))
 
     exact_match_percentage = (correct_count / dataset_length) * 100
     overestimation_percentage = (len(overestimations) / dataset_length) * 100
+    underestimation_percentage = (len(underestimations) / dataset_length) * 100
 
-    sorted_overestimations = sorted(overestimations, key=lambda x: x[1], reverse=True)
-    percentiles = {}
+    top_20_overestimations = heapq.nlargest(20, overestimations, key=lambda x: x[1])
+    top_20_underestimations = heapq.nsmallest(20, underestimations, key=lambda x: x[1])
+
+    overestimation_percentiles = {}
+    underestimation_percentiles = {}
+    combined_percentiles = {}
+    overestimation_errors = [error for _, error in overestimations]
+    underestimation_errors = [abs(error) for _, error in underestimations]
+    combined = overestimation_errors + underestimation_errors
+    abs_combined = [abs(e) for e in combined]
+
     if overestimations:
-        overestimation_errors = [error for _, error in sorted_overestimations]
-        percentiles = {
+        overestimation_percentiles = {
             "50th": np.percentile(overestimation_errors, 50),
             "90th": np.percentile(overestimation_errors, 90),
             "95th": np.percentile(overestimation_errors, 95),
             "100th": np.percentile(overestimation_errors, 100)
         }
 
+    if underestimations:
+        underestimation_percentiles = {
+            "50th": np.percentile(underestimation_errors, 50),
+            "90th": np.percentile(underestimation_errors, 90),
+            "95th": np.percentile(underestimation_errors, 95),
+            "100th": np.percentile(underestimation_errors, 100)
+        }
+
+    if underestimations or overestimations:
+        combined_percentiles = {
+            "50th": np.percentile(abs_combined, 50),
+            "90th": np.percentile(abs_combined, 90),
+            "95th": np.percentile(abs_combined, 95),
+            "100th": np.percentile(abs_combined, 100)
+        }
+
     return {
         'overestimation_percentage': overestimation_percentage,
+        'underestimation_percentage': underestimation_percentage,
         'exact_match_percentage': exact_match_percentage,
         'avg_error': avg_error,
         'avg_error_percentage': avg_error_percentage,
         'max_error_percentage': max_error_percentage,
-        'percentiles': percentiles,
-        'overestimated_items': sorted_overestimations
+        'overestimation_percentiles': overestimation_percentiles,
+        'underestimation_percentiles': underestimation_percentiles,
+        'combined_percentiles': combined_percentiles,
+        'top_20_overestimations': top_20_overestimations,
+        'top_20_underestimations': top_20_underestimations
     }
 
 
 def print_accuracy_evaluation(accuracy):
-    overestimations = accuracy['overestimated_items']
     overestimation_percentage = accuracy['overestimation_percentage']
+    underestimation_percentage = accuracy['underestimation_percentage']
     exact_match_percentage = accuracy['exact_match_percentage']
     avg_error_percentage = accuracy['avg_error_percentage']
     avg_error = accuracy['avg_error']
-    percentiles = accuracy['percentiles']
+    max_error_percentage = accuracy['max_error_percentage']
 
+    over_percentiles = accuracy.get('overestimation_percentiles', {})
+    under_percentiles = accuracy.get('underestimation_percentiles', {})
+    combined_percentiles = accuracy.get('combined_percentiles', {})
+
+    overestimations = accuracy['top_20_overestimations']
+    underestimations = accuracy['top_20_underestimations']
+
+    print(f"Exact Matches: {exact_match_percentage:.2f}%")
     print(f"Overestimations: {len(overestimations)} ({overestimation_percentage:.2f}%)")
-    print(f"Exact Matches: {len([item for item, error in overestimations if error == 0])} ({exact_match_percentage:.2f}%)")
-    print(f"Average Error Percentage: {avg_error_percentage:.2f}%")
+    print(f"Underestimations: {len(underestimations)} ({underestimation_percentage:.2f}%)")
     print(f"Average Error: {avg_error:.3f}")
-    print(f"Max Error Percentage: {accuracy['max_error_percentage']:.2f}%")
+    print(f"Average Error Percentage: {avg_error_percentage:.2f}%")
+    print(f"Max Error Percentage: {max_error_percentage:.2f}%")
 
-    print("Percentiles:")
-    for percentile, value in percentiles.items():
-        print(f"{percentile}: {value}")
+    if over_percentiles:
+        print("\nOverestimation Percentiles (error):")
+        for percentile, value in over_percentiles.items():
+            print(f"{percentile}: +{value:.2f}")
 
-    max_items_to_display = 10
-    print("\nSorted Overestimated Items:")
-    for item, error in overestimations[:max_items_to_display]:
+    if under_percentiles:
+        print("\nUnderestimation Percentiles (absolute error):")
+        for percentile, value in under_percentiles.items():
+            print(f"{percentile}: -{value:.2f}")
+
+    if combined_percentiles:
+        print("\nCombined Percentiles (absolute error):")
+        for percentile, value in combined_percentiles.items():
+            print(f"{percentile}: {value:.2f}")
+
+    print("\nTop Overestimations:")
+    for item, error in overestimations[:10]:
+        print(f"{item}: +{error}")
+
+    print("\nTop Underestimations:")
+    for item, error in underestimations[:10]:
         print(f"{item}: {error}")
