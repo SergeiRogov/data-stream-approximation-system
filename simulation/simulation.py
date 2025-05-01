@@ -4,11 +4,13 @@ import datetime
 from evaluation.memory_usage import evaluate_memory_usage
 from evaluation.query_speed import evaluate_query_speed
 from input_stream.dataset_stream_simulator import DatasetStreamSimulator
+from summarization_algorithms.conservative_count_min_sketch import ConservativeCountMinSketch
 from summarization_algorithms.count_mean_min_sketch import CountMeanMinSketch
 from summarization_algorithms.count_min_sketch import CountMinSketch
+from summarization_algorithms.count_sketch import CountSketch
 from evaluation.accuracy import evaluate_accuracy
-import copy
 from visualization.visualization import visualize
+import copy
 
 
 def evaluate(cms, ground_truth):
@@ -30,10 +32,24 @@ def record_metrics(results_file, items_processed, accuracy, query_speed, memory_
         "memory_usage": float(memory_usage),
         "load_factor": float(load_factor),
         "percentiles": {
-            "50th": float(accuracy["percentiles"].get("50th", 0.0)),
-            "90th": float(accuracy["percentiles"].get("90th", 0.0)),
-            "95th": float(accuracy["percentiles"].get("95th", 0.0)),
-            "100th": float(accuracy["percentiles"].get("100th", 0.0)),
+            "overestimation": {
+                "50th": float(accuracy.get("overestimation_percentiles", {}).get("50th", 0.0)),
+                "90th": float(accuracy.get("overestimation_percentiles", {}).get("90th", 0.0)),
+                "95th": float(accuracy.get("overestimation_percentiles", {}).get("95th", 0.0)),
+                "100th": float(accuracy.get("overestimation_percentiles", {}).get("100th", 0.0)),
+            },
+            "underestimation": {
+                "50th": float(accuracy.get("underestimation_percentiles", {}).get("50th", 0.0)),
+                "90th": float(accuracy.get("underestimation_percentiles", {}).get("90th", 0.0)),
+                "95th": float(accuracy.get("underestimation_percentiles", {}).get("95th", 0.0)),
+                "100th": float(accuracy.get("underestimation_percentiles", {}).get("100th", 0.0)),
+            },
+            "combined": {
+                "50th": float(accuracy.get("combined_percentiles", {}).get("50th", 0.0)),
+                "90th": float(accuracy.get("combined_percentiles", {}).get("90th", 0.0)),
+                "95th": float(accuracy.get("combined_percentiles", {}).get("95th", 0.0)),
+                "100th": float(accuracy.get("combined_percentiles", {}).get("100th", 0.0)),
+            }
         }
     }
     try:
@@ -56,8 +72,10 @@ if __name__ == '__main__':
     FIELD = "Tweet"
 
     stream_simulator = DatasetStreamSimulator(dataset_path=DATASET_PATH, field_name=FIELD, sleep_time=SLEEP_TIME)
-    cms = CountMeanMinSketch(width=WIDTH, depth=DEPTH)
     # cms = CountMinSketch(width=WIDTH, depth=DEPTH)
+    cms = ConservativeCountMinSketch(width=WIDTH, depth=DEPTH)
+    # cms = CountMeanMinSketch(width=WIDTH, depth=DEPTH)
+    # cms = CountSketch(width=WIDTH, depth=DEPTH)
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     ALGORITHM_NAME = cms.__class__.__name__

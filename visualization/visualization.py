@@ -24,12 +24,12 @@ def plot_metric(results, metric, ylabel, title, save_path):
     plt.show()
 
 
-def plot_percentiles(results, save_path):
+def plot_percentile_category(results, category, save_path):
     processed_items = [entry["processed_items"] for entry in results]
-    p50 = [entry["percentiles"]["50th"] for entry in results]
-    p90 = [entry["percentiles"]["90th"] for entry in results]
-    p95 = [entry["percentiles"]["95th"] for entry in results]
-    p100 = [entry["percentiles"]["100th"] for entry in results]
+    p50 = [entry["percentiles"][category].get("50th", 0.0) for entry in results]
+    p90 = [entry["percentiles"][category].get("90th", 0.0) for entry in results]
+    p95 = [entry["percentiles"][category].get("95th", 0.0) for entry in results]
+    p100 = [entry["percentiles"][category].get("100th", 0.0) for entry in results]
 
     plt.figure(figsize=(8, 5))
     plt.plot(processed_items, p100, marker="*", linestyle=":", markersize=3, label="100th Percentile")
@@ -39,7 +39,7 @@ def plot_percentiles(results, save_path):
 
     plt.xlabel("Number of Processed Items")
     plt.ylabel("Error Value")
-    plt.title("Error Percentiles Over Time")
+    plt.title(f"{category.capitalize()} Error Percentiles Over Time")
     plt.legend()
     plt.grid(True)
 
@@ -60,4 +60,6 @@ def visualize(results_file, output_dir):
                 f"{output_dir}/query_speed.png")
     plot_metric(results, "memory_usage", "Memory Usage (bytes)", "Memory Usage vs. Processed Items",
                 f"{output_dir}/memory_usage.png")
-    plot_percentiles(results, f"{output_dir}/percentiles.png")
+    plot_percentile_category(results, "overestimation", f"{output_dir}/overestimation_percentiles.png")
+    plot_percentile_category(results, "underestimation", f"{output_dir}/underestimation_percentiles.png")
+    plot_percentile_category(results, "combined", f"{output_dir}/combined_percentiles.png")
