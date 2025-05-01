@@ -54,10 +54,16 @@ def visualize(results_file, output_dir):
     plot_metric(results, "avg_error", "Average Error", "Avg Error vs. Processed Items", f"{output_dir}/avg_error.png")
     plot_metric(results, "overestimation_percentage", "Overestimation Percentage (%)", "Overestimation Percentage vs. Processed Items",
                 f"{output_dir}/overestimation_percentage.png")
-    plot_metric(results, "load_factor", "Load Factor", "Factor vs. Processed Items",
+    plot_metric(results, "underestimation_percentage", "Underestimation Percentage (%)",
+                "Underestimation Percentage vs. Processed Items",
+                f"{output_dir}/underestimation_percentage.png")
+    plot_metric(results, "exact_match_percentage", "Exact Match Percentage (%)",
+                "Exact Match Percentage vs. Processed Items",
+                f"{output_dir}/exact_match_percentage.png")
+    plot_metric(results, "load_factor", "Load Factor", "Load Factor vs. Processed Items",
                 f"{output_dir}/load_factor.png")
-    plot_metric(results, "query_speed", "Query Speed (seconds per item)", "Query Speed vs. Processed Items",
-                f"{output_dir}/query_speed.png")
+    plot_metric(results, "avg_query_time", "Average Query Time (seconds per item)", "Average Query Time vs. Processed Items",
+                f"{output_dir}/avg_query_time.png")
     plot_metric(results, "memory_usage", "Memory Usage (bytes)", "Memory Usage vs. Processed Items",
                 f"{output_dir}/memory_usage.png")
     plot_percentile_category(results, "overestimation", f"{output_dir}/overestimation_percentiles.png")

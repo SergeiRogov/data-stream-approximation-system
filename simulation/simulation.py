@@ -2,7 +2,7 @@ import json
 import os
 import datetime
 from evaluation.memory_usage import evaluate_memory_usage
-from evaluation.query_speed import evaluate_query_speed
+from evaluation.avg_query_time import evaluate_avg_query_time
 from input_stream.dataset_stream_simulator import DatasetStreamSimulator
 from summarization_algorithms.conservative_count_min_sketch import ConservativeCountMinSketch
 from summarization_algorithms.count_mean_min_sketch import CountMeanMinSketch
@@ -16,19 +16,21 @@ import copy
 def evaluate(cms, ground_truth):
     print(f"{cms.totalCount} items processed. Evaluating...")
     accuracy = evaluate_accuracy(cms, ground_truth)
-    query_speed = evaluate_query_speed(cms, ground_truth)
+    avg_query_time = evaluate_avg_query_time(cms, ground_truth)
     memory_usage = evaluate_memory_usage(cms)
     load_factor = cms.get_load_factor()
 
-    return accuracy, query_speed, memory_usage, load_factor
+    return accuracy, avg_query_time, memory_usage, load_factor
 
 
-def record_metrics(results_file, items_processed, accuracy, query_speed, memory_usage, load_factor):
+def record_metrics(results_file, items_processed, accuracy, avg_query_time, memory_usage, load_factor):
     result = {
         "processed_items": int(items_processed),
         "avg_error": float(accuracy["avg_error"]),
         "overestimation_percentage": float(accuracy["overestimation_percentage"]),
-        "query_speed": float(query_speed),
+        "underestimation_percentage": float(accuracy["underestimation_percentage"]),
+        "exact_match_percentage": float(accuracy["exact_match_percentage"]),
+        "avg_query_time": float(avg_query_time),
         "memory_usage": float(memory_usage),
         "load_factor": float(load_factor),
         "percentiles": {
@@ -107,6 +109,6 @@ if __name__ == '__main__':
         if cms.totalCount % visualize_every_n_items == 0:
             visualize(RESULTS_FILE, PLOTS_DIR)
 
-    accuracy, query_speed, memory_usage, load_factor = evaluate(cms, ground_truth)
-    record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage, load_factor)
+    accuracy, avg_query_time, memory_usage, load_factor = evaluate(cms, ground_truth)
+    record_metrics(RESULTS_FILE, cms.totalCount, accuracy, avg_query_time, memory_usage, load_factor)
     visualize(RESULTS_FILE, PLOTS_DIR)
