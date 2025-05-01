@@ -21,7 +21,6 @@ def plot_metric(results, metric, ylabel, title, save_path):
     plt.grid(True)
 
     plt.savefig(save_path)
-    plt.show()
 
 
 def plot_percentile_category(results, category, save_path):
@@ -44,7 +43,6 @@ def plot_percentile_category(results, category, save_path):
     plt.grid(True)
 
     plt.savefig(save_path)
-    plt.show()
 
 
 def visualize(results_file, output_dir):

@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     WIDTH = 10000
     DEPTH = 5
-    SLEEP_TIME = 0.00000001
+    SLEEP_TIME = 0.0001
 
     DATASET_PATH = "../datasets/FIFA.csv"
     FIELD = "Tweet"
@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     ground_truth = {}
 
-    eval_every_n_items = 5_000
+    eval_every_n_items = 2_000
     visualize_every_n_items = 100_000
 
     for item in stream_simulator.simulate_stream():
@@ -106,9 +106,9 @@ if __name__ == '__main__':
             accuracy, query_speed, memory_usage, load_factor = evaluate(copy.deepcopy(cms), copy.deepcopy(ground_truth))
             record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage, load_factor)
 
-        if cms.totalCount % visualize_every_n_items == 0:
-            visualize(RESULTS_FILE, PLOTS_DIR)
+        # if cms.totalCount % visualize_every_n_items == 0:
+            # visualize(RESULTS_FILE, PLOTS_DIR)
 
     accuracy, avg_query_time, memory_usage, load_factor = evaluate(cms, ground_truth)
     record_metrics(RESULTS_FILE, cms.totalCount, accuracy, avg_query_time, memory_usage, load_factor)
-    visualize(RESULTS_FILE, PLOTS_DIR)
+    # visualize(RESULTS_FILE, PLOTS_DIR)
