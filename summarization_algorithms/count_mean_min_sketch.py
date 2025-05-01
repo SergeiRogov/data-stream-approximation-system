@@ -43,8 +43,7 @@ class CountMeanMinSketch(CountMinSketchBase):
         cms_estimates = []
         for row, idx in zip(self.hash_tables, self._hash(item)):
             raw = row[idx]
-            total = np.sum(row)
-            noise = (total - raw) / (self.width - 1) if self.width > 1 else 0
+            noise = (self.totalCount - raw) / (self.width - 1) if self.width > 1 else 0
             residue = raw - noise
             residues.append(residue)
             cms_estimates.append(raw)
