@@ -1,3 +1,9 @@
+# Ignore PNG image files
+*.png
+
+# Ignore JSON files
+*.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
