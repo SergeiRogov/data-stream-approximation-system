@@ -3,12 +3,9 @@ import os
 import datetime
 from evaluation.memory_usage import evaluate_memory_usage
 from evaluation.avg_query_time import evaluate_avg_query_time
-from input_stream.dataset_stream_simulator import DatasetStreamSimulator
-from summarization_algorithms.conservative_count_min_sketch import ConservativeCountMinSketch
-from summarization_algorithms.count_mean_min_sketch import CountMeanMinSketch
-from summarization_algorithms.count_min_sketch import CountMinSketch
-from summarization_algorithms.count_sketch import CountSketch
 from evaluation.accuracy import evaluate_accuracy
+from ground_truth.decaying_truth import DecayingTruth
+from ground_truth.truth import Truth
 from visualization.visualization import visualize
 import copy
 
@@ -64,28 +61,82 @@ def record_metrics(results_file, items_processed, accuracy, avg_query_time, memo
         json.dump(existing_results, f, indent=4)
 
 
+def get_algorithm(algorithm, width, depth, alpha=0.1):
+    if algorithm == "ConservativeCountMinSketch":
+        from summarization_algorithms.conservative_count_min_sketch import ConservativeCountMinSketch
+        cms = ConservativeCountMinSketch(width=width, depth=depth)
+    elif algorithm == "CountMeanMinSketch":
+        from summarization_algorithms.count_mean_min_sketch import CountMeanMinSketch
+        cms = CountMeanMinSketch(width=width, depth=depth)
+    elif algorithm == "CountSketch":
+        from summarization_algorithms.count_sketch import CountSketch
+        cms = CountSketch(width=width, depth=depth)
+    elif algorithm == "DecayCMS":
+        from summarization_algorithms.decay_cms import DecayCMS
+        cms = DecayCMS(width=width, depth=depth, alpha=alpha)
+    else:  # CountMinSketch
+        from summarization_algorithms.count_min_sketch import CountMinSketch
+        cms = CountMinSketch(width=width, depth=depth)
+    return cms
+
+
+def process_config(config):
+    if config["stream_type"] == "random":
+        config["dataset_name"] = "synthetic"
+    else:
+        import os
+        config["dataset_name"] = os.path.splitext(os.path.basename(config["dataset_path"]))[0]
+    return config
+
+
+def get_truth_class(config):
+    if config["algorithm"] == "DecayCMS":
+        return DecayingTruth(alpha=config["alpha"])
+    return Truth()
+
+
+def get_stream_simulator(config):
+    if config["stream_type"] == "dataset":
+        from input_stream.dataset_stream_simulator import DatasetStreamSimulator
+        return DatasetStreamSimulator(
+            dataset_path=config["dataset_path"],
+            field_name=config["field"],
+            sleep_time=config["sleep_time"]
+        )
+    elif config["stream_type"] == "random":
+        from input_stream.random_stream_simulator import RandomStreamSimulator
+        return RandomStreamSimulator(sleep_time=config["sleep_time"])
+    else:
+        raise ValueError(f"Unknown stream source: {config['stream_type']}")
+
+
+def eval_and_record(cms, ground_truth, file_path):
+    accuracy, query_speed, memory_usage, load_factor = evaluate(copy.deepcopy(cms), ground_truth.get_all())
+    record_metrics(file_path, cms.totalCount, accuracy, query_speed, memory_usage, load_factor)
+
+
 if __name__ == '__main__':
 
-    WIDTH = 10000
-    DEPTH = 5
-    SLEEP_TIME = 0.0001
+    with open("../config.json", "r") as f:
+        CONFIG = json.load(f)
 
-    DATASET_PATH = "../datasets/FIFA.csv"
-    FIELD = "Tweet"
+    CONFIG = process_config(CONFIG)
 
-    stream_simulator = DatasetStreamSimulator(dataset_path=DATASET_PATH, field_name=FIELD, sleep_time=SLEEP_TIME)
-    # cms = CountMinSketch(width=WIDTH, depth=DEPTH)
-    cms = ConservativeCountMinSketch(width=WIDTH, depth=DEPTH)
-    # cms = CountMeanMinSketch(width=WIDTH, depth=DEPTH)
-    # cms = CountSketch(width=WIDTH, depth=DEPTH)
+    WIDTH = CONFIG["width"]
+    DEPTH = CONFIG["depth"]
+    ALGORITHM = CONFIG["algorithm"]
+    ALPHA = CONFIG.get("alpha", 0.1)
+    EVAL_INTERVAL = CONFIG["eval_interval"]
+    VIS_INTERVAL = CONFIG["vis_interval"]
+    DATASET_NAME = CONFIG["dataset_name"]
+
+    stream_simulator = get_stream_simulator(CONFIG)
+    cms = get_algorithm(ALGORITHM, WIDTH, DEPTH, ALPHA)
+    ground_truth = get_truth_class(CONFIG)
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    ALGORITHM_NAME = cms.__class__.__name__
-    DATASET_NAME = os.path.splitext(os.path.basename(DATASET_PATH))[0]
-
-    RESULTS_DIR = f"../experiments/{DATASET_NAME}/{ALGORITHM_NAME}/w{cms.width}_d{cms.depth}/{timestamp}"
+    RESULTS_DIR = f"../experiments/{DATASET_NAME}/{ALGORITHM}/w{cms.width}_d{cms.depth}/{timestamp}"
     os.makedirs(RESULTS_DIR, exist_ok=True)
-
     RESULTS_FILE = os.path.join(RESULTS_DIR, "results.json")
     PLOTS_DIR = RESULTS_DIR
 
@@ -93,22 +144,15 @@ if __name__ == '__main__':
         with open(RESULTS_FILE, "w") as f:
             json.dump([], f)
 
-    ground_truth = {}
-
-    eval_every_n_items = 2_000
-    visualize_every_n_items = 100_000
-
     for item in stream_simulator.simulate_stream():
         cms.add(item)
-        ground_truth[item] = ground_truth.get(item, 0) + 1
+        ground_truth.add(item)
 
-        if cms.totalCount % eval_every_n_items == 0:
-            accuracy, query_speed, memory_usage, load_factor = evaluate(copy.deepcopy(cms), copy.deepcopy(ground_truth))
-            record_metrics(RESULTS_FILE, cms.totalCount, accuracy, query_speed, memory_usage, load_factor)
+        if cms.totalCount % EVAL_INTERVAL == 0:
+            eval_and_record(cms, ground_truth, RESULTS_FILE)
 
-        # if cms.totalCount % visualize_every_n_items == 0:
-            # visualize(RESULTS_FILE, PLOTS_DIR)
+        if cms.totalCount % VIS_INTERVAL == 0:
+            visualize(RESULTS_FILE, PLOTS_DIR)
 
-    accuracy, avg_query_time, memory_usage, load_factor = evaluate(cms, ground_truth)
-    record_metrics(RESULTS_FILE, cms.totalCount, accuracy, avg_query_time, memory_usage, load_factor)
-    # visualize(RESULTS_FILE, PLOTS_DIR)
+    eval_and_record(cms, ground_truth, RESULTS_FILE)
+    visualize(RESULTS_FILE, PLOTS_DIR)
