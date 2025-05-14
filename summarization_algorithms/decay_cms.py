@@ -1,13 +1,13 @@
 import numpy as np
 import hashlib
-from count_min_sketch_base import CountMinSketchBase
+from summarization_algorithms.count_min_sketch_base import CountMinSketchBase
 
 
-class SlidingWindowDecayCMS(CountMinSketchBase):
+class DecayCMS(CountMinSketchBase):
     def __init__(self, width, depth, alpha=0.1, *args, **kwargs):
         super().__init__(width, depth, *args, **kwargs)
         self.alpha = alpha
-        self.tables = np.zeros((depth, width), dtype=float)
+        self.hash_tables = np.zeros((depth, width), dtype=float)
 
     def _hash(self, x):
         """
@@ -21,16 +21,16 @@ class SlidingWindowDecayCMS(CountMinSketchBase):
 
     def add(self, item, count=1):
         for row, col in enumerate(self._hash(item)):
-            prev = self.tables[row, col]
-            self.tables[row, col] = (1 - self.alpha) * prev + self.alpha * count
+            prev = self.hash_tables[row, col]
+            self.hash_tables[row, col] = (1 - self.alpha) * prev + self.alpha * count
         self.totalCount += 1
 
     def query(self, item):
-        return min(self.tables[row, col] for row, col in enumerate(self._hash(item)))
+        return min(self.hash_tables[row, col] for row, col in enumerate(self._hash(item)))
 
     def reset(self):
-        self.tables.fill(0)
+        self.hash_tables.fill(0)
         self.totalCount = 0
 
     def get_load_factor(self):
-        return max(np.count_nonzero(row) for row in self.tables) / self.width
+        return max(np.count_nonzero(row) for row in self.hash_tables) / self.width
