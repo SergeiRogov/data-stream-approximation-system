@@ -1,5 +1,5 @@
-import random
 import time
+import numpy as np
 from input_stream.stream_simulator_base import StreamSimulator
 
 
@@ -7,21 +7,10 @@ class RandomStreamSimulator(StreamSimulator):
     """
     Simulates a simple data stream by generating items at a controlled rate.
     """
-
-    def __init__(self, sleep_time=0.01, stream_size=1000, item_list=None):
+    def __init__(self, sleep_time=0.00001, stream_size=500000, zipf_param=1.3):
         super().__init__(sleep_time)
         self.stream_size = stream_size
-        self.item_list = item_list if item_list else ["apple", "banana", "cherry",
-                                                      "ginger", "strawberry", "fig",
-                                                      "grape", "pineapple", "kiwi"]
-
-    def generate_random_stream(self):
-        """
-        Generate a random data stream of predefined size.
-        Returns:
-            A list of randomly selected items from the item list.
-        """
-        return [random.choice(self.item_list) for _ in range(self.stream_size)]
+        self.zipf_param = zipf_param
 
     def simulate_stream(self):
         """
@@ -29,7 +18,7 @@ class RandomStreamSimulator(StreamSimulator):
         Yields:
             One item at a time from the generated stream.
         """
-        data_stream = self.generate_random_stream()
+        data_stream = np.random.zipf(a=self.zipf_param, size=self.stream_size).tolist()
         for item in data_stream:
             yield item
             time.sleep(self.sleep_time)
