@@ -8,6 +8,7 @@ from ground_truth.decaying_truth import DecayingTruth
 from ground_truth.truth import Truth
 from visualization.visualization import visualize
 import copy
+import argparse
 
 
 def evaluate(cms, ground_truth):
@@ -116,25 +117,38 @@ def eval_and_record(cms, ground_truth, file_path):
 
 
 if __name__ == '__main__':
-
     with open("../config.json", "r") as f:
         CONFIG = json.load(f)
-
     CONFIG = process_config(CONFIG)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--algorithm', required=True, help='Algorithm to use')
+    parser.add_argument('--dataset', required=True, help='Dataset to use')
+    parser.add_argument('--width', type=int, help='Width parameter for CMS')
+    parser.add_argument('--depth', type=int, help='Depth parameter for CMS')
+    parser.add_argument('--timestamp', required=False)
+    args = parser.parse_args()
+
+    if args.width is not None:
+        CONFIG['width'] = args.width
+    if args.depth is not None:
+        CONFIG['depth'] = args.depth
 
     WIDTH = CONFIG["width"]
     DEPTH = CONFIG["depth"]
-    ALGORITHM = CONFIG["algorithm"]
+    ALGORITHM = args.algorithm
     ALPHA = CONFIG.get("alpha", 0.1)
     EVAL_INTERVAL = CONFIG["eval_interval"]
     VIS_INTERVAL = CONFIG["vis_interval"]
+    if args.dataset:
+        CONFIG['dataset_name'] = args.dataset
     DATASET_NAME = CONFIG["dataset_name"]
 
     stream_simulator = get_stream_simulator(CONFIG)
     cms = get_algorithm(ALGORITHM, WIDTH, DEPTH, ALPHA)
     ground_truth = get_truth_class(CONFIG)
 
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = args.timestamp or datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     RESULTS_DIR = f"../experiments/{DATASET_NAME}/{ALGORITHM}/w{cms.width}_d{cms.depth}/{timestamp}"
     os.makedirs(RESULTS_DIR, exist_ok=True)
     RESULTS_FILE = os.path.join(RESULTS_DIR, "results.json")

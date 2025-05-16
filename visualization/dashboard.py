@@ -1,9 +1,11 @@
 import os
 import dash
-from dash import dcc, html
-import plotly.graph_objects as go
 import json
-from dash.dependencies import Input, Output
+import datetime
+import subprocess
+from dash import dcc, html, no_update
+import plotly.graph_objects as go
+from dash.dependencies import Input, Output, State
 from pathlib import Path
 
 
@@ -17,8 +19,9 @@ def get_latest_results_file(base_path):
     return latest_dir / "results.json"
 
 
-RESULTS_FILE = get_latest_results_file("../experiments/FIFA/ConservativeCountMinSketch/w10000_d5")
 app = dash.Dash(__name__)
+server = app.server
+last_modified = 0
 
 GRAPH_METRICS = [
     ("avg_error_graph", "avg_error", "Average Error", "Avg Error vs. Processed Items"),
@@ -37,10 +40,48 @@ PERCENTILE_GRAPHS = [
 ]
 
 app.layout = html.Div([
-    html.H1("CMS Algorithm Performance Metrics"),
-    *(dcc.Graph(id=graph_id) for graph_id, *_ in GRAPH_METRICS),
-    *(dcc.Graph(id=graph_id) for graph_id, _ in PERCENTILE_GRAPHS),
-    dcc.Interval(id='interval-component', interval=500, n_intervals=0),
+    html.Div([
+        html.Label("Select Algorithm 1"),
+        dcc.Dropdown(
+            id='algo1-dropdown',
+            options=[{'label': name, 'value': name} for name in
+                     ["CountMinSketch",
+                      "ConservativeCountMinSketch",
+                      "CountMeanMinSketch",
+                      "CountSketch",
+                      "DecayCMS"]],
+            value='CountMinSketch'
+        ),
+        html.Label("Select Algorithm 2"),
+        dcc.Dropdown(
+            id='algo2-dropdown',
+            options=[{'label': name, 'value': name} for name in
+                     ["CountMinSketch",
+                      "ConservativeCountMinSketch",
+                      "CountMeanMinSketch",
+                      "CountSketch",
+                      "DecayCMS"]],
+            value='ConservativeCountMinSketch'
+        ),
+        html.Label("Width"),
+        dcc.Input(id='width-input', type='number', value=10000, min=1),
+        html.Label("Depth"),
+        dcc.Input(id='depth-input', type='number', value=5, min=1),
+        html.Label("Select Dataset"),
+        dcc.Dropdown(
+            id='dataset-dropdown',
+            options=[{'label': name, 'value': name} for name in
+                     ["FIFA.csv",
+                      "uchoice-Kosarak.txt",
+                      "uchoice-Kosarak-5-25.txt",
+                      "synthetic"]],
+            value='FIFA.csv'
+        ),
+        html.Button("Run Experiment", id='run-button', n_clicks=0),
+    ]),
+    html.Div(id='graphs-container'),
+    dcc.Interval(id='interval-component', interval=500, n_intervals=0, disabled=True),
+    dcc.Store(id="latest-results-store"),
 ])
 
 
@@ -88,9 +129,6 @@ def generate_percentile_graph(results, category):
     return fig
 
 
-last_modified = None
-
-
 def file_changed(path):
     global last_modified
     modified = os.path.getmtime(path)
@@ -100,20 +138,84 @@ def file_changed(path):
     return False
 
 
-@app.callback(
-    [Output(graph_id, 'figure') for graph_id, *_ in GRAPH_METRICS] +
-    [Output(graph_id, 'figure') for graph_id, _ in PERCENTILE_GRAPHS],
-    Input('interval-component', 'n_intervals')
+def generate_result_path(algorithm, dataset, width, depth, timestamp):
+    dir_path = f"../experiments/{dataset}/{algorithm}/w{width}_d{depth}/{timestamp}/results.json"
+    return dir_path
+
+
+dcc.Interval(
+    id='interval-component',
+    interval=0.5*1000,
+    n_intervals=0
 )
-def update_graphs(_):
-    if not file_changed(RESULTS_FILE):
+
+
+@app.callback(
+    Output('interval-component', 'disabled'),
+    Output('latest-results-store', 'data'),
+    Input('run-button', 'n_clicks'),
+    State('algo1-dropdown', 'value'),
+    State('algo2-dropdown', 'value'),
+    State('dataset-dropdown', 'value'),
+    State('width-input', 'value'),
+    State('depth-input', 'value')
+)
+def run_experiment(n_clicks, algo1, algo2, dataset, width, depth):
+    if n_clicks == 0:
         raise dash.exceptions.PreventUpdate
-    results = load_results(RESULTS_FILE)
-    figures = [generate_metric_graph(results, metric, ylabel, title)
-               for _, metric, ylabel, title in GRAPH_METRICS]
-    figures += [generate_percentile_graph(results, category)
-                for _, category in PERCENTILE_GRAPHS]
-    return figures
+
+    now = datetime.datetime.now()
+    timestamp1 = now.strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp2 = (now + datetime.timedelta(seconds=1)).strftime("%Y-%m-%d_%H-%M-%S") if algo1 == algo2 else timestamp1
+
+    subprocess.Popen([
+        "python3", "../simulation/simulation.py",
+        "--algorithm", algo1,
+        "--dataset", dataset,
+        "--width", str(width),
+        "--depth", str(depth),
+        "--timestamp", timestamp1
+    ])
+    subprocess.Popen([
+        "python3", "../simulation/simulation.py",
+        "--algorithm", algo2,
+        "--dataset", dataset,
+        "--width", str(width),
+        "--depth", str(depth),
+        "--timestamp", timestamp2
+    ])
+
+    results1 = generate_result_path(algo1, dataset, width, depth, timestamp1)
+    results2 = generate_result_path(algo2, dataset, width, depth, timestamp2)
+    label_1 = f"{algo1}"
+    label_2 = f"{algo2}"
+    return False, {label_1: results1, label_2: results2}
+
+
+@app.callback(
+    Output('graphs-container', 'children'),
+    Input('interval-component', 'n_intervals'),
+    Input('latest-results-store', 'data')
+)
+def update_graphs(n_intervals, results_paths):
+    if not results_paths:
+        return []
+
+    graphs = []
+    for label, path in results_paths.items():
+        if not os.path.exists(path):
+            continue
+        data = load_results(path)
+        for graph_id, metric, ylabel, title in GRAPH_METRICS:
+            fig = generate_metric_graph(data, metric, ylabel, f"{title} [{label}]")
+            graphs.append(dcc.Graph(id=f"{graph_id}-{label}", figure=fig))
+
+        for graph_id, category in PERCENTILE_GRAPHS:
+            fig = generate_percentile_graph(data, category)
+            fig.update_layout(title=f"{category.capitalize()} Percentiles [{label}]")
+            graphs.append(dcc.Graph(id=f"{graph_id}-{label}", figure=fig))
+
+    return graphs
 
 
 if __name__ == '__main__':
