@@ -3,25 +3,13 @@ import dash
 import json
 import datetime
 import subprocess
-from dash import dcc, html, no_update
+from dash import dcc, html
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
-from pathlib import Path
-
-
-def get_latest_results_file(base_path):
-    base = Path(base_path)
-    subdirs = [d for d in base.iterdir() if d.is_dir()]
-    if not subdirs:
-        raise FileNotFoundError("No timestamped result directories found.")
-
-    latest_dir = max(subdirs, key=lambda d: d.name)
-    return latest_dir / "results.json"
 
 
 app = dash.Dash(__name__)
 server = app.server
-last_modified = 0
 
 GRAPH_METRICS = [
     ("avg_error_graph", "avg_error", "Average Error", "Avg Error vs. Processed Items"),
@@ -39,28 +27,25 @@ PERCENTILE_GRAPHS = [
     ("combined_percentiles_graph", "combined"),
 ]
 
+ALGORITHMS = ["CountMinSketch",
+              "ConservativeCountMinSketch",
+              "CountMeanMinSketch",
+              "CountSketch",
+              "DecayCMS"]
+
+
 app.layout = html.Div([
     html.Div([
         html.Label("Select Algorithm 1"),
         dcc.Dropdown(
             id='algo1-dropdown',
-            options=[{'label': name, 'value': name} for name in
-                     ["CountMinSketch",
-                      "ConservativeCountMinSketch",
-                      "CountMeanMinSketch",
-                      "CountSketch",
-                      "DecayCMS"]],
+            options=[{'label': name, 'value': name} for name in ALGORITHMS],
             value='CountMinSketch'
         ),
         html.Label("Select Algorithm 2"),
         dcc.Dropdown(
             id='algo2-dropdown',
-            options=[{'label': name, 'value': name} for name in
-                     ["CountMinSketch",
-                      "ConservativeCountMinSketch",
-                      "CountMeanMinSketch",
-                      "CountSketch",
-                      "DecayCMS"]],
+            options=[{'label': name, 'value': name} for name in ALGORITHMS],
             value='ConservativeCountMinSketch'
         ),
         html.Label("Width"),
@@ -78,16 +63,36 @@ app.layout = html.Div([
             value='FIFA.csv'
         ),
         html.Button("Run Experiment", id='run-button', n_clicks=0),
+        html.Button("Stop Experiment", id='stop-button', n_clicks=0),
     ]),
     html.Div(id='graphs-container'),
-    dcc.Interval(id='interval-component', interval=500, n_intervals=0, disabled=True),
+    dcc.Interval(
+        id='interval-component',
+        interval=0.5*1000,
+        n_intervals=0
+    ),
     dcc.Store(id="latest-results-store"),
 ])
 
+import time
 
-def load_results(filepath):
-    with open(filepath, "r") as file:
-        return json.load(file)
+
+def load_results(filepath, max_retries=3, delay=0.2):
+    for attempt in range(max_retries):
+        try:
+            with open(filepath, "r") as file:
+                return json.load(file)
+        except json.JSONDecodeError as e:
+            print(f"[Attempt {attempt + 1}/{max_retries}] JSON decode error in file '{filepath}': {e}")
+        except FileNotFoundError:
+            print(f"[Attempt {attempt + 1}/{max_retries}] File not found: '{filepath}'")
+        except Exception as e:
+            print(f"[Attempt {attempt + 1}/{max_retries}] Unexpected error with file '{filepath}': {e}")
+
+        time.sleep(delay)
+
+    print(f"Failed to load JSON after {max_retries} attempts: '{filepath}'")
+    return None
 
 
 def generate_line_graph(x, y, name, ylabel, title):
@@ -129,25 +134,9 @@ def generate_percentile_graph(results, category):
     return fig
 
 
-def file_changed(path):
-    global last_modified
-    modified = os.path.getmtime(path)
-    if last_modified is None or modified != last_modified:
-        last_modified = modified
-        return True
-    return False
-
-
-def generate_result_path(algorithm, dataset, width, depth, timestamp):
+def get_result_path(algorithm, dataset, width, depth, timestamp):
     dir_path = f"../experiments/{dataset}/{algorithm}/w{width}_d{depth}/{timestamp}/results.json"
     return dir_path
-
-
-dcc.Interval(
-    id='interval-component',
-    interval=0.5*1000,
-    n_intervals=0
-)
 
 
 @app.callback(
@@ -168,7 +157,7 @@ def run_experiment(n_clicks, algo1, algo2, dataset, width, depth):
     timestamp1 = now.strftime("%Y-%m-%d_%H-%M-%S")
     timestamp2 = (now + datetime.timedelta(seconds=1)).strftime("%Y-%m-%d_%H-%M-%S") if algo1 == algo2 else timestamp1
 
-    subprocess.Popen([
+    proc1 = subprocess.Popen([
         "python3", "../simulation/simulation.py",
         "--algorithm", algo1,
         "--dataset", dataset,
@@ -176,7 +165,7 @@ def run_experiment(n_clicks, algo1, algo2, dataset, width, depth):
         "--depth", str(depth),
         "--timestamp", timestamp1
     ])
-    subprocess.Popen([
+    proc2 = subprocess.Popen([
         "python3", "../simulation/simulation.py",
         "--algorithm", algo2,
         "--dataset", dataset,
@@ -185,11 +174,13 @@ def run_experiment(n_clicks, algo1, algo2, dataset, width, depth):
         "--timestamp", timestamp2
     ])
 
-    results1 = generate_result_path(algo1, dataset, width, depth, timestamp1)
-    results2 = generate_result_path(algo2, dataset, width, depth, timestamp2)
-    label_1 = f"{algo1}"
-    label_2 = f"{algo2}"
-    return False, {label_1: results1, label_2: results2}
+    results1 = get_result_path(algo1, dataset, width, depth, timestamp1)
+    results2 = get_result_path(algo2, dataset, width, depth, timestamp2)
+
+    return False, {
+        algo1: {"path": results1, "pid": proc1.pid},
+        algo2: {"path": results2, "pid": proc2.pid}
+    }
 
 
 @app.callback(
@@ -201,21 +192,65 @@ def update_graphs(n_intervals, results_paths):
     if not results_paths:
         return []
 
-    graphs = []
-    for label, path in results_paths.items():
-        if not os.path.exists(path):
-            continue
-        data = load_results(path)
-        for graph_id, metric, ylabel, title in GRAPH_METRICS:
-            fig = generate_metric_graph(data, metric, ylabel, f"{title} [{label}]")
-            graphs.append(dcc.Graph(id=f"{graph_id}-{label}", figure=fig))
+    data = {}
+    for label, info in results_paths.items():
+        path = info["path"] if isinstance(info, dict) else info
+        if os.path.exists(path):
+            loaded = load_results(path)
+            if loaded:
+                data[label] = loaded
 
-        for graph_id, category in PERCENTILE_GRAPHS:
-            fig = generate_percentile_graph(data, category)
-            fig.update_layout(title=f"{category.capitalize()} Percentiles [{label}]")
-            graphs.append(dcc.Graph(id=f"{graph_id}-{label}", figure=fig))
+    if not data:
+        return []
 
-    return graphs
+    children = []
+
+    # Graphs for scalar metrics
+    for graph_id, metric, ylabel, title in GRAPH_METRICS:
+        row = []
+        for label in results_paths:
+            if label in data:
+                fig = generate_metric_graph(data[label], metric, ylabel, f"{title} [{label}]")
+                row.append(html.Div(
+                    dcc.Graph(id=f"{graph_id}-{label}", figure=fig),
+                    style={"width": "50%", "display": "inline-block"}
+                ))
+        children.append(html.Div(row))
+
+    # Graphs for percentiles
+    for graph_id, category in PERCENTILE_GRAPHS:
+        row = []
+        for label in results_paths:
+            if label in data:
+                fig = generate_percentile_graph(data[label], category)
+                fig.update_layout(title=f"{category.capitalize()} Percentiles [{label}]")
+                row.append(html.Div(
+                    dcc.Graph(id=f"{graph_id}-{label}", figure=fig),
+                    style={"width": "50%", "display": "inline-block"}
+                ))
+        children.append(html.Div(row))
+
+    return children
+
+
+@app.callback(
+    Output('interval-component', 'disabled', allow_duplicate=True),
+    Input('stop-button', 'n_clicks'),
+    State('latest-results-store', 'data'),
+    prevent_initial_call='initial_duplicate'
+)
+def stop_experiment(n_clicks, results_data):
+    if not results_data:
+        raise dash.exceptions.PreventUpdate
+
+    for info in results_data.values():
+        pid = info.get("pid")
+        if pid:
+            try:
+                os.kill(pid, 9)  # 9 = SIGKILL (force kill)
+            except OSError as e:
+                print(f"Failed to kill process {pid}: {e}")
+    return True  # disable interval updates
 
 
 if __name__ == '__main__':
