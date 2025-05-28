@@ -79,7 +79,8 @@ app.layout = html.Div([
                     style={'backgroundColor': 'green', 'color': 'white'},
                     disabled=False),
 
-        html.Button("Stop Experiment", id='stop-button', n_clicks=0, style={'backgroundColor': 'red', 'color': 'white'}),
+        html.Button("Stop Experiment", id='stop-button', n_clicks=0,
+                    style={'backgroundColor': 'gray', 'color': 'white'}),
     ]),
     html.Div(id='graphs-container'),
     dcc.Interval(
@@ -281,6 +282,17 @@ def toggle_run_button(is_running):
     if is_running:
         return True, {'backgroundColor': 'gray', 'color': 'white'}
     return False, {'backgroundColor': 'green', 'color': 'white'}
+
+
+@app.callback(
+    Output('stop-button', 'disabled'),
+    Output('stop-button', 'style'),
+    Input('experiment-running-store', 'data')
+)
+def toggle_stop_button(is_running):
+    if is_running:
+        return False, {'backgroundColor': 'red', 'color': 'white'}
+    return True, {'backgroundColor': 'gray', 'color': 'white'}
 
 
 if __name__ == '__main__':
