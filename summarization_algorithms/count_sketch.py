@@ -15,12 +15,12 @@ class CountSketch(CountMinSketchBase):
 
     def _hash_index(self, x):
         """
-        Hash function to map the item to column indices in each row.
+        Generate multiple hash values for a given input item using SHA-256
         """
-        base_hash = hashlib.md5(str(hash(x)).encode('utf-8'))
+        base = str(x)
         for i in range(self.depth):
-            base_hash.update(str(i).encode('utf-8'))
-            yield int(base_hash.hexdigest(), 16) % self.width
+            h = hashlib.sha256((base + str(i)).encode('utf-8'))
+            yield int(h.hexdigest(), 16) % self.width
 
     def _hash_sign(self, x):
         """

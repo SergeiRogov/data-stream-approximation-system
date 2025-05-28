@@ -23,7 +23,7 @@ class DecayCMS(CountMinSketchBase):
         for row, col in enumerate(self._hash(item)):
             prev = self.hash_tables[row, col]
             self.hash_tables[row, col] = (1 - self.alpha) * prev + self.alpha * count
-        self.totalCount += 1
+        self.totalCount += count
 
     def query(self, item):
         return min(self.hash_tables[row, col] for row, col in enumerate(self._hash(item)))

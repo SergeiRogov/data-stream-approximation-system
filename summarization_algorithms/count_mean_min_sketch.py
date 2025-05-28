@@ -20,12 +20,12 @@ class CountMeanMinSketch(CountMinSketchBase):
 
     def _hash(self, x):
         """
-        Generate multiple hash values for a given input item
+        Generate multiple hash values for a given input item using SHA-256
         """
-        base_hash = hashlib.md5(str(hash(x)).encode('utf-8'))
+        base = str(x)
         for i in range(self.depth):
-            base_hash.update(str(i).encode('utf-8'))
-            yield int(base_hash.hexdigest(), 16) % self.width
+            h = hashlib.sha256((base + str(i)).encode('utf-8'))
+            yield int(h.hexdigest(), 16) % self.width
 
     def add(self, item, count=1):
         """
