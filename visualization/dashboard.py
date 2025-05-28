@@ -6,6 +6,7 @@ import subprocess
 from dash import dcc, html
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
+import time
 
 
 app = dash.Dash(__name__)
@@ -42,39 +43,54 @@ app.layout = html.Div([
             options=[{'label': name, 'value': name} for name in ALGORITHMS],
             value='CountMinSketch'
         ),
+        html.Br(),
+
         html.Label("Select Algorithm 2"),
         dcc.Dropdown(
             id='algo2-dropdown',
             options=[{'label': name, 'value': name} for name in ALGORITHMS],
             value='ConservativeCountMinSketch'
         ),
+        html.Br(),
+
         html.Label("Width"),
         dcc.Input(id='width-input', type='number', value=10000, min=1),
+        html.Br(),
+
         html.Label("Depth"),
         dcc.Input(id='depth-input', type='number', value=5, min=1),
-        html.Label("Select Dataset"),
+        html.Br(),
+        html.Br(),
+
+        html.Label("Select a Dataset"),
         dcc.Dropdown(
             id='dataset-dropdown',
-            options=[{'label': name, 'value': name} for name in
-                     ["FIFA.csv",
-                      "uchoice-Kosarak.txt",
-                      "uchoice-Kosarak-5-25.txt",
-                      "synthetic"]],
+            options=[{'label': name, 'value': name} for name in [
+                "FIFA.csv",
+                "uchoice-Kosarak.txt",
+                "uchoice-Kosarak-5-25.txt",
+                "synthetic"
+            ]],
             value='FIFA.csv'
         ),
-        html.Button("Run Experiment", id='run-button', n_clicks=0),
-        html.Button("Stop Experiment", id='stop-button', n_clicks=0),
+        html.Br(),
+
+        html.Button("Run Experiment", id='run-button', n_clicks=0,
+                    style={'backgroundColor': 'green', 'color': 'white'},
+                    disabled=False),
+
+        html.Button("Stop Experiment", id='stop-button', n_clicks=0, style={'backgroundColor': 'red', 'color': 'white'}),
     ]),
     html.Div(id='graphs-container'),
     dcc.Interval(
         id='interval-component',
-        interval=0.5*1000,
+        interval=0.5 * 1000,
         n_intervals=0
     ),
     dcc.Store(id="latest-results-store"),
-])
+    dcc.Store(id="experiment-running-store", data=False),
 
-import time
+])
 
 
 def load_results(filepath, max_retries=3, delay=0.2):
@@ -142,12 +158,14 @@ def get_result_path(algorithm, dataset, width, depth, timestamp):
 @app.callback(
     Output('interval-component', 'disabled'),
     Output('latest-results-store', 'data'),
+    Output('experiment-running-store', 'data', allow_duplicate=True),
     Input('run-button', 'n_clicks'),
     State('algo1-dropdown', 'value'),
     State('algo2-dropdown', 'value'),
     State('dataset-dropdown', 'value'),
     State('width-input', 'value'),
-    State('depth-input', 'value')
+    State('depth-input', 'value'),
+    prevent_initial_call='initial_duplicate'
 )
 def run_experiment(n_clicks, algo1, algo2, dataset, width, depth):
     if n_clicks == 0:
@@ -180,7 +198,7 @@ def run_experiment(n_clicks, algo1, algo2, dataset, width, depth):
     return False, {
         algo1: {"path": results1, "pid": proc1.pid},
         algo2: {"path": results2, "pid": proc2.pid}
-    }
+    }, True  # Mark experiment as running
 
 
 @app.callback(
@@ -235,6 +253,7 @@ def update_graphs(n_intervals, results_paths):
 
 @app.callback(
     Output('interval-component', 'disabled', allow_duplicate=True),
+    Output('experiment-running-store', 'data', allow_duplicate=True),
     Input('stop-button', 'n_clicks'),
     State('latest-results-store', 'data'),
     prevent_initial_call='initial_duplicate'
@@ -250,7 +269,18 @@ def stop_experiment(n_clicks, results_data):
                 os.kill(pid, 9)  # 9 = SIGKILL (force kill)
             except OSError as e:
                 print(f"Failed to kill process {pid}: {e}")
-    return True  # disable interval updates
+    return True, False  # Disable interval, mark experiment as not running
+
+
+@app.callback(
+    Output('run-button', 'disabled'),
+    Output('run-button', 'style'),
+    Input('experiment-running-store', 'data')
+)
+def toggle_run_button(is_running):
+    if is_running:
+        return True, {'backgroundColor': 'gray', 'color': 'white'}
+    return False, {'backgroundColor': 'green', 'color': 'white'}
 
 
 if __name__ == '__main__':
