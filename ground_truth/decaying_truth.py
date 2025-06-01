@@ -1,24 +1,28 @@
-import collections
+from collections import deque
 from ground_truth.base_truth import BaseTruth
 
 
 class DecayingTruth(BaseTruth):
-    def __init__(self, alpha=0.1):
-        self.alpha = alpha
-        self.counts = collections.defaultdict(float)
+    def __init__(self, window_size=1000):
+        self.window_size = window_size
+        self.data = deque()  # list of items
+        self.freq = {}
 
-    def decay_all(self):
-        for key in list(self.counts.keys()):
-            self.counts[key] *= (1 - self.alpha)
-            if self.counts[key] < 1e-6:
-                del self.counts[key]
+    def add(self, item):
+        self.data.append(item)
+        self.freq[item] = self.freq.get(item, 0) + 1
 
-    def add(self, item, count=1):
-        self.decay_all()
-        self.counts[item] += self.alpha * count
+        if len(self.data) > self.window_size:
+            old_item = self.data.popleft()
+            self.freq[old_item] -= 1
+            if self.freq[old_item] == 0:
+                del self.freq[old_item]
 
     def query(self, item):
-        return self.counts.get(item, 0.0)
+        return self.freq.get(item, 0)
+
+    def get_top_k(self, k):
+        return sorted(self.freq.items(), key=lambda x: -x[1])[:k]
 
     def get_all(self):
-        return dict(self.counts)
+        return dict(self.freq)
