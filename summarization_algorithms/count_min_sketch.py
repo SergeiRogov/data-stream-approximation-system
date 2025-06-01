@@ -16,7 +16,7 @@ class CountMinSketch(CountMinSketchBase):
         Initialize sketch with width and depth.
         """
         super().__init__(width, depth)
-        self.hash_tables = np.zeros((self.depth, self.width), dtype=int)
+        self.counters = np.zeros((self.depth, self.width), dtype=int)
 
     def _hash(self, x):
         """
@@ -32,7 +32,7 @@ class CountMinSketch(CountMinSketchBase):
         Add the element 'item' as if it had appeared 'count' times
         """
         self.totalCount += count
-        for table, i in zip(self.hash_tables, self._hash(item)):
+        for table, i in zip(self.counters, self._hash(item)):
             table[i] += count
 
     def query(self, item):
@@ -40,17 +40,17 @@ class CountMinSketch(CountMinSketchBase):
         Return an estimation of the amount of times `item` has occurred.
         The returned value always overestimates the real value.
         """
-        return min(table[i] for table, i in zip(self.hash_tables, self._hash(item)))
+        return min(table[i] for table, i in zip(self.counters, self._hash(item)))
 
     def reset(self):
         """
         Reset the sketch by clearing all tables and setting the count to 0.
         """
         self.totalCount = 0
-        self.hash_tables.fill(0)
+        self.counters.fill(0)
 
     def get_load_factor(self):
         """
         Return the load factor: maximum number of non-zero counters in any row, divided by width.
         """
-        return max(sum(1 for cell in row if cell > 0) for row in self.hash_tables) / self.width
+        return max(sum(1 for cell in row if cell > 0) for row in self.counters) / self.width

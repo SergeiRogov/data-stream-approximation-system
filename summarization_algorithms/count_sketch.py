@@ -11,7 +11,7 @@ class CountSketch(CountMinSketchBase):
     """
     def __init__(self, width, depth):
         super().__init__(width, depth)
-        self.hash_tables = np.zeros((self.depth, self.width), dtype=int)
+        self.counters = np.zeros((self.depth, self.width), dtype=int)
 
     def _hash_index(self, x):
         """
@@ -32,18 +32,18 @@ class CountSketch(CountMinSketchBase):
 
     def add(self, item, count=1):
         self.totalCount += abs(count)
-        for row, idx, sign in zip(self.hash_tables, self._hash_index(item), self._hash_sign(item)):
+        for row, idx, sign in zip(self.counters, self._hash_index(item), self._hash_sign(item)):
             row[idx] += sign * count
 
     def query(self, item):
         estimates = []
-        for row, idx, sign in zip(self.hash_tables, self._hash_index(item), self._hash_sign(item)):
+        for row, idx, sign in zip(self.counters, self._hash_index(item), self._hash_sign(item)):
             estimates.append(sign * row[idx])
         return int(np.median(estimates))
 
     def reset(self):
         self.totalCount = 0
-        self.hash_tables.fill(0)
+        self.counters.fill(0)
 
     def get_load_factor(self):
-        return max(np.count_nonzero(row) for row in self.hash_tables) / self.width
+        return max(np.count_nonzero(row) for row in self.counters) / self.width
