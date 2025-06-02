@@ -94,7 +94,7 @@ def process_config(config):
 
 def get_truth_class(config):
     if config["algorithm"] == "SlidingCountMinSketch":
-        return DecayingTruth()
+        return DecayingTruth(window_size=10000)
     return Truth()
 
 
