@@ -32,7 +32,7 @@ ALGORITHMS = ["CountMinSketch",
               "ConservativeCountMinSketch",
               "CountMeanMinSketch",
               "CountSketch",
-              "DecayCMS"]
+              "SlidingCountMinSketch"]
 
 
 app.layout = html.Div([

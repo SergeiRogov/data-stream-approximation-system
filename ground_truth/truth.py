@@ -8,5 +8,8 @@ class Truth(BaseTruth):
     def add(self, item):
         self.counts[item] = self.counts.get(item, 0) + 1
 
+    def query(self, item):
+        return self.counts.get(item, 0)
+
     def get_all(self):
         return dict(self.counts)

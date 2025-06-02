@@ -62,8 +62,11 @@ def record_metrics(results_file, items_processed, accuracy, avg_query_time, memo
         json.dump(existing_results, f, indent=4)
 
 
-def get_algorithm(algorithm, width, depth, alpha=0.1):
-    if algorithm == "ConservativeCountMinSketch":
+def get_algorithm(algorithm, width, depth):
+    if algorithm == "CountMinSketch":
+        from summarization_algorithms.count_min_sketch import CountMinSketch
+        cms = CountMinSketch(width=width, depth=depth)
+    elif algorithm == "ConservativeCountMinSketch":
         from summarization_algorithms.conservative_count_min_sketch import ConservativeCountMinSketch
         cms = ConservativeCountMinSketch(width=width, depth=depth)
     elif algorithm == "CountMeanMinSketch":
@@ -72,12 +75,11 @@ def get_algorithm(algorithm, width, depth, alpha=0.1):
     elif algorithm == "CountSketch":
         from summarization_algorithms.count_sketch import CountSketch
         cms = CountSketch(width=width, depth=depth)
-    elif algorithm == "DecayCMS":
-        from summarization_algorithms.decay_cms import DecayCMS
-        cms = DecayCMS(width=width, depth=depth, alpha=alpha)
-    else:  # CountMinSketch
-        from summarization_algorithms.count_min_sketch import CountMinSketch
-        cms = CountMinSketch(width=width, depth=depth)
+    elif algorithm == "SlidingCountMinSketch":
+        from summarization_algorithms.sliding_count_min_sketch import SlidingCountMinSketch
+        cms = SlidingCountMinSketch(width=width, depth=depth, window_size=10000)
+    else:
+        raise ValueError(f"Unknown algorithm: {algorithm}")
     return cms
 
 
@@ -91,8 +93,8 @@ def process_config(config):
 
 
 def get_truth_class(config):
-    if config["algorithm"] == "DecayCMS":
-        return DecayingTruth(alpha=config["alpha"])
+    if config["algorithm"] == "SlidingCountMinSketch":
+        return DecayingTruth()
     return Truth()
 
 
@@ -145,7 +147,7 @@ if __name__ == '__main__':
     DATASET_NAME = CONFIG["dataset_name"]
 
     stream_simulator = get_stream_simulator(CONFIG)
-    cms = get_algorithm(ALGORITHM, WIDTH, DEPTH, ALPHA)
+    cms = get_algorithm(ALGORITHM, WIDTH, DEPTH)
     ground_truth = get_truth_class(CONFIG)
 
     timestamp = args.timestamp or datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
