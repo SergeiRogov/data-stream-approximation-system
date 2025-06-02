@@ -48,7 +48,7 @@ def evaluate_accuracy(cms, ground_truth):
     correct_count = 0
 
     for item in test_items:
-        error = cms.query(item) - ground_truth[item]
+        error = cms[item] - ground_truth[item]
         errors.append(error)
 
         if error == 0:
