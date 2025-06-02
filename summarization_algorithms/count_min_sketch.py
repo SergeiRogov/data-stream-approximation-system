@@ -54,3 +54,21 @@ class CountMinSketch(CountMinSketchBase):
         Return the load factor: maximum number of non-zero counters in any row, divided by width.
         """
         return max(sum(1 for cell in row if cell > 0) for row in self.counters) / self.width
+
+
+if __name__ == '__main__':
+    from ground_truth.truth import Truth
+    cms = CountMinSketch(width=10, depth=4)
+    truth = Truth()
+    for item in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]:
+        print(f"----------------------------------")
+
+        print(f"Being inserted: {item}")
+        cms.add(item)
+        truth.add(item)
+        print(cms.counters)
+
+        print(f"Being queried: {item}")
+        print(f"CMS: {cms.query(item)}")
+        print(f"Truth: {truth.query(item)}")
+
