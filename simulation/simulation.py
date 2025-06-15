@@ -83,15 +83,6 @@ def get_algorithm(algorithm, width, depth):
     return cms
 
 
-def process_config(config):
-    if config["stream_type"] == "random":
-        config["dataset_name"] = "synthetic"
-    else:
-        import os
-        config["dataset_name"] = os.path.splitext(os.path.basename(config["dataset_path"]))[0]
-    return config
-
-
 def get_truth_class(config):
     if config["algorithm"] == "SlidingCountMinSketch":
         return DecayingTruth(window_size=config["width"]*config["depth"])
@@ -120,7 +111,6 @@ def eval_and_record(cms, ground_truth, file_path):
 if __name__ == '__main__':
     with open("../config.json", "r") as f:
         CONFIG = json.load(f)
-    # CONFIG = process_config(CONFIG)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--algorithm', required=True, help='Algorithm to use')

@@ -20,6 +20,12 @@ class SlidingCountMinSketch(CountMinSketchBase):
         return int(h.hexdigest(), 16) % self.width
 
     def _scan_step(self):
+        """
+        Perform a scan step over the sliding window:
+        - Copy current counter (A[i][0]) to backup (A[i][1]).
+        - Reset current counter to 0.
+        - Advance scan pointer.
+        """
         for _ in range(self.mN):
             d = self.scan_pointer // self.width
             w = self.scan_pointer % self.width
@@ -35,6 +41,10 @@ class SlidingCountMinSketch(CountMinSketchBase):
             self.scan_pointer = (self.scan_pointer + 1) % self.total_slots
 
     def add(self, item, count=1):
+        """
+        Add an item (possibly multiple times) to the sketch.
+        Advances the scan pointer before each insertion to maintain window.
+        """
         for _ in range(count):
             # Advance scan pointer before updating
             self._scan_step()
@@ -44,6 +54,10 @@ class SlidingCountMinSketch(CountMinSketchBase):
             self.totalCount += 1
 
     def query(self, item):
+        """
+        Query the estimated frequency of an item over the current window.
+        Combines both active and backup counters.
+        """
         est = float('inf')
         for i in range(self.depth):
             pos = self._hash(item, i)
@@ -52,6 +66,7 @@ class SlidingCountMinSketch(CountMinSketchBase):
         return est
 
     def reset(self):
+        """Reset the sketch to an empty state."""
         self.counters.fill(0)
         self.scan_pointer = 0
         self.totalCount = 0

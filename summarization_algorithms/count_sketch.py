@@ -7,7 +7,7 @@ import random
 class CountSketch(CountMinSketchBase):
     """
     Fast-AGMS / Count Sketch implementation.
-    This sketch provides unbiased frequency estimation and supports both positive and negative updates (turnstile model).
+    This sketch provides unbiased frequency estimation.
     """
     def __init__(self, width, depth):
         super().__init__(width, depth)
