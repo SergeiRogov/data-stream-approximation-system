@@ -23,12 +23,10 @@ class CountSketch(CountMinSketchBase):
             yield int(h.hexdigest(), 16) % self.width
 
     def _hash_sign(self, x):
-        """
-        Second hash function to determine whether to add or subtract (+1 or -1).
-        """
-        rng = random.Random(hash(x))
-        for _ in range(self.depth):
-            yield 1 if rng.choice([True, False]) else -1
+        base = str(x)
+        for i in range(self.depth):
+            h = hashlib.sha256((base + "_sign" + str(i)).encode('utf-8'))
+            yield 1 if int(h.hexdigest(), 16) % 2 == 0 else -1
 
     def add(self, item, count=1):
         self.totalCount += abs(count)
