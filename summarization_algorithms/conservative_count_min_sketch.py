@@ -37,8 +37,7 @@ class ConservativeCountMinSketch(CountMinSketchBase):
         current_min = min(current_vals)
 
         for i, idx in enumerate(indices):
-            if self.counters[i][idx] == current_min:
-                self.counters[i][idx] += count
+            self.counters[i][idx] = max(self.counters[i][idx], current_min + count)
 
         self.totalCount += count
 
