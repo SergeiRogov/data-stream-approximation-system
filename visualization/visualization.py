@@ -51,6 +51,7 @@ def visualize(results_file, output_dir):
     results = load_results(results_file)
 
     plot_metric(results, "avg_error", "Average Error", "Avg Error vs. Processed Items", f"{output_dir}/avg_error.png")
+    plot_metric(results, "avg_error_percentage", "Average Error Percentage", "Avg Error Percentage vs. Processed Items", f"{output_dir}/avg_error_percentage.png")
     plot_metric(results, "overestimation_percentage", "Overestimation Percentage (%)", "Overestimation Percentage vs. Processed Items",
                 f"{output_dir}/overestimation_percentage.png")
     plot_metric(results, "underestimation_percentage", "Underestimation Percentage (%)",

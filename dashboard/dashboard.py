@@ -14,6 +14,7 @@ server = app.server
 
 GRAPH_METRICS = [
     ("avg_error_graph", "avg_error", "Average Error", "Avg Error vs. Processed Items"),
+    ("avg_error_percentage_graph", "avg_error_percentage", "Average Error Percentage", "Avg Error Percentage vs. Processed Items"),
     ("overestimation_percentage_graph", "overestimation_percentage", "Overestimation Percentage (%)", "Overestimation Percentage vs. Processed Items"),
     ("underestimation_percentage_graph", "underestimation_percentage", "Underestimation Percentage (%)", "Underestimation Percentage vs. Processed Items"),
     ("exact_match_percentage_graph", "exact_match_percentage", "Exact Match Percentage (%)", "Exact Match Percentage vs. Processed Items"),

@@ -12,7 +12,7 @@ import argparse
 
 
 def evaluate(cms, ground_truth):
-    print(f"{cms.totalCount} items processed. Evaluating...")
+    # print(f"{cms.totalCount} items processed. Evaluating...")
     accuracy = evaluate_accuracy(cms, ground_truth)
     avg_query_time = evaluate_avg_query_time(cms, ground_truth)
     memory_usage = evaluate_memory_usage(cms)
@@ -25,6 +25,7 @@ def record_metrics(results_file, items_processed, accuracy, avg_query_time, memo
     result = {
         "processed_items": int(items_processed),
         "avg_error": float(accuracy["avg_error"]),
+        "avg_error_percentage": float(accuracy["avg_error_percentage"]),
         "overestimation_percentage": float(accuracy["overestimation_percentage"]),
         "underestimation_percentage": float(accuracy["underestimation_percentage"]),
         "exact_match_percentage": float(accuracy["exact_match_percentage"]),
@@ -77,7 +78,7 @@ def get_algorithm(algorithm, width, depth):
         cms = CountSketch(width=width, depth=depth)
     elif algorithm == "SlidingCountMinSketch":
         from summarization_algorithms.sliding_count_min_sketch import SlidingCountMinSketch
-        cms = SlidingCountMinSketch(width=width, depth=depth, window_size=10000)
+        cms = SlidingCountMinSketch(width=width, depth=depth)
     else:
         raise ValueError(f"Unknown algorithm: {algorithm}")
     return cms
@@ -94,23 +95,22 @@ def process_config(config):
 
 def get_truth_class(config):
     if config["algorithm"] == "SlidingCountMinSketch":
-        return DecayingTruth(window_size=10000)
+        return DecayingTruth(window_size=config["width"]*config["depth"])
     return Truth()
 
 
 def get_stream_simulator(config):
-    if config["stream_type"] == "dataset":
-        from input_stream.dataset_stream_simulator import DatasetStreamSimulator
-        return DatasetStreamSimulator(
-            dataset_path=config["dataset_path"],
-            field_name=config["field"],
-            sleep_time=config["sleep_time"]
-        )
-    elif config["stream_type"] == "random":
+
+    if config["dataset_name"] == "synthetic":
         from input_stream.random_stream_simulator import RandomStreamSimulator
         return RandomStreamSimulator(sleep_time=config["sleep_time"])
     else:
-        raise ValueError(f"Unknown stream source: {config['stream_type']}")
+        from input_stream.dataset_stream_simulator import DatasetStreamSimulator
+        return DatasetStreamSimulator(
+            dataset_path=f"../datasets/{config['dataset_name']}",
+            field_name=config["field"],
+            sleep_time=config["sleep_time"]
+        )
 
 
 def eval_and_record(cms, ground_truth, file_path):
@@ -121,7 +121,7 @@ def eval_and_record(cms, ground_truth, file_path):
 if __name__ == '__main__':
     with open("../config.json", "r") as f:
         CONFIG = json.load(f)
-    CONFIG = process_config(CONFIG)
+    # CONFIG = process_config(CONFIG)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--algorithm', required=True, help='Algorithm to use')
@@ -139,7 +139,6 @@ if __name__ == '__main__':
     WIDTH = CONFIG["width"]
     DEPTH = CONFIG["depth"]
     ALGORITHM = args.algorithm
-    ALPHA = CONFIG.get("alpha", 0.1)
     EVAL_INTERVAL = CONFIG["eval_interval"]
     VIS_INTERVAL = CONFIG["vis_interval"]
     if args.dataset:
