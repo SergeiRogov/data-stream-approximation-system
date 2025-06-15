@@ -12,7 +12,6 @@ import argparse
 
 
 def evaluate(cms, ground_truth):
-    # print(f"{cms.totalCount} items processed. Evaluating...")
     accuracy = evaluate_accuracy(cms, ground_truth)
     avg_query_time = evaluate_avg_query_time(cms, ground_truth)
     memory_usage = evaluate_memory_usage(cms)
