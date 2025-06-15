@@ -13,14 +13,15 @@ class CountMeanMinSketch(CountMinSketchBase):
     """
     def __init__(self, width, depth):
         """
-        Initialize sketch with width and depth.
+        Initialize sketch with given width and depth.
         """
         super().__init__(width, depth)
         self.counters = np.zeros((self.depth, self.width), dtype=int)
+        self.totalCount = 0
 
     def _hash(self, x):
         """
-        Generate multiple hash values for a given input item using SHA-256
+        Generate multiple hash values using SHA-256 with added seed for depth variation.
         """
         base = str(x)
         for i in range(self.depth):
@@ -29,30 +30,40 @@ class CountMeanMinSketch(CountMinSketchBase):
 
     def add(self, item, count=1):
         """
-        Add the element 'item' as if it had appeared 'count' times
+        Add the element 'item' to the sketch 'count' times.
         """
         self.totalCount += count
-        for table, i in zip(self.counters, self._hash(item)):
-            table[i] += count
+        for row, idx in zip(self.counters, self._hash(item)):
+            row[idx] += count
+
+    def _estimate_error(self, row_idx, col_idx):
+        """
+        Estimate the average noise in a particular row (excluding target cell).
+        """
+        row = self.counters[row_idx]
+        target_value = row[col_idx]
+        row_sum = np.sum(row)
+        noise = (row_sum - target_value) / (self.width - 1) if self.width > 1 else 0
+        return noise
 
     def query(self, item):
         """
-        Return an estimation of the frequency of `item`, adjusting for noise.
+        Return a corrected frequency estimate using the Count-Mean-Min algorithm.
         """
-        residues = []
-        cms_estimates = []
-        for row, idx in zip(self.counters, self._hash(item)):
-            raw = row[idx]
-            noise = (self.totalCount - raw) / (self.width - 1) if self.width > 1 else 0
-            residue = raw - noise
-            residues.append(residue)
-            cms_estimates.append(raw)
+        estimates = []
+        raw_values = []
 
-        return max(0, min(round(np.median(residues)), min(cms_estimates)))
+        for i, (row, idx) in enumerate(zip(self.counters, self._hash(item))):
+            raw = row[idx]
+            noise = self._estimate_error(i, idx)
+            estimates.append(raw - noise)
+            raw_values.append(raw)
+
+        return max(0, min(np.median(estimates), min(raw_values)))
 
     def reset(self):
         """
-        Reset the sketch by clearing all tables and setting the count to 0.
+        Reset the sketch to its initial state.
         """
         self.totalCount = 0
         self.counters.fill(0)
@@ -61,4 +72,4 @@ class CountMeanMinSketch(CountMinSketchBase):
         """
         Return the load factor: maximum number of non-zero counters in any row, divided by width.
         """
-        return max(sum(1 for cell in row if cell > 0) for row in self.counters) / self.width
+        return max(np.count_nonzero(row) for row in self.counters) / self.width
